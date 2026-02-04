@@ -9,6 +9,7 @@ use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\MejaController;
+use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\Admin\StaffKasirController;
 use App\Http\Controllers\Admin\StaffWaiterController;
 
@@ -44,7 +45,13 @@ Route::middleware(['auth'])->group(function () {
 
     // PENGATURAN (accessible by all authenticated users)
     Route::view('/dashboard/pengaturan', 'dashboard.pengaturan');
-    Route::view('/dashboard/laporan', 'dashboard.laporan');
+    Route::get('/dashboard/laporan', [LaporanController::class, 'index'])
+        ->name('dashboard.laporan');
+    Route::get(
+        '/dashboard/laporan/export-excel',
+        [LaporanController::class, 'exportExcel']
+    )->name('laporan.export.excel');
+
 
 
     /*

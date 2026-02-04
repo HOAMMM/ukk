@@ -8,7 +8,6 @@
     <title>Warung Nusantara</title>
     <link rel="stylesheet" href="{{ asset('bootstrap/css/bootstrap.min.css') }}">
     <link href="{{ asset('bootstrap/icon/bootstrap-icons.css') }}" rel="stylesheet">
-    <link href="{{ asset('bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('fontawesome/css/all.min.css') }}">
 
     <style>
@@ -278,40 +277,6 @@
             cursor: pointer;
         }
 
-        /* Bottom Nav */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            display: flex;
-            justify-content: space-around;
-            padding: 12px 0 8px;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
-            z-index: 98;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: #999;
-            text-decoration: none;
-            font-size: 0.7rem;
-            flex: 1;
-            cursor: pointer;
-        }
-
-        .nav-item i {
-            font-size: 1.3rem;
-        }
-
-        .nav-item.active {
-            color: #ff6b35;
-        }
-
         /* Modal */
         .modal {
             position: fixed;
@@ -549,6 +514,40 @@
             display: block;
         }
 
+        /* Order Type */
+        .order-type-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .order-type-option {
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .order-type-option.active {
+            border-color: #ff6b35;
+            background: #fff3ed;
+        }
+
+        .order-type-option i {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            display: block;
+            color: #ff6b35;
+        }
+
+        .order-type-option strong {
+            display: block;
+            font-size: 1rem;
+        }
+
         /* Success */
         .success-modal {
             display: flex;
@@ -686,7 +685,8 @@
             <div class="logo"><i class="fas fa-utensils"></i> Warung Nusantara</div>
             <div class="header-icons">
                 <button class="icon-btn" onclick="toggleFavorites()"><i class="fas fa-heart"></i></button>
-                <button class="icon-btn" onclick="toggleCart()"><i class="fas fa-shopping-cart"></i><span class="badge" id="cart-badge">0</span></button>
+                <button class="icon-btn" onclick="toggleCart()"><i class="fas fa-shopping-cart"></i><span
+                        class="badge" id="cart-badge">0</span></button>
             </div>
         </div>
         <div class="search-box">
@@ -727,15 +727,18 @@
             @forelse ($menus as $menu)
             <div class="menu-card" data-category="{{ $menu->menu_kategori }}">
                 <div class="menu-img-wrapper">
-                    <img src="{{ asset('uploads/menu/' . $menu->menu_image) }}" class="menu-img" alt="{{ $menu->menu_name }}">
+                    <img src="{{ asset('uploads/menu/' . $menu->menu_image) }}" class="menu-img"
+                        alt="{{ $menu->menu_name }}">
                     <div class="menu-badge">{{ $menu->menu_kategori }}</div>
-                    <button class="favorite-btn" onclick="toggleFavorite(this, {{ $menu->menu_id }})"><i class="fas fa-heart"></i></button>
+                    <button class="favorite-btn" onclick="toggleFavorite(this, {{ $menu->menu_id }})"><i
+                            class="fas fa-heart"></i></button>
                 </div>
                 <div class="menu-body">
                     <div class="menu-name">{{ $menu->menu_name }}</div>
                     <div class="menu-footer">
                         <div class="menu-price">Rp {{ number_format($menu->menu_price, 0, ',', '.') }}</div>
-                        <button class="btn-add" onclick='addToCart(@json($menu))'><i class="fas fa-plus"></i></button>
+                        <button class="btn-add" onclick='addToCart(@json($menu))'><i
+                                class="fas fa-plus"></i></button>
                     </div>
                 </div>
             </div>
@@ -777,7 +780,8 @@
                 <div class="subtotal-row"><span>Subtotal</span><span id="subtotal">Rp 0</span></div>
                 <div class="subtotal-row"><span>Pajak (10%)</span><span id="tax">Rp 0</span></div>
                 <div class="total-row"><span>Total</span><span class="price" id="total">Rp 0</span></div>
-                <button class="btn-checkout" onclick="showCheckout()"><i class="fas fa-credit-card"></i> Checkout</button>
+                <button class="btn-checkout" onclick="showCheckout()"><i class="fas fa-credit-card"></i>
+                    Checkout</button>
             </div>
         </div>
     </div>
@@ -789,8 +793,28 @@
                 <h3><i class="fas fa-receipt"></i> Checkout</h3>
             </div>
             <div class="modal-body">
-                <div class="form-group"><label class="form-label">Nama *</label><input type="text" class="form-control" id="customer-name" required></div>
-                <div class="form-group meja-section">
+                <div class="form-group">
+                    <label class="form-label">Nama *</label>
+                    <input type="text" class="form-control" id="customer-name" required>
+                </div>
+
+                <!-- ORDER TYPE: Dine In / Takeaway -->
+                <div class="form-group">
+                    <label class="form-label"><strong>Tipe Pesanan *</strong></label>
+                    <div class="order-type-options">
+                        <div class="order-type-option active" data-type="dine_in" onclick="selectOrderType(this)">
+                            <i class="fas fa-utensils"></i>
+                            <strong>Makan di Sini</strong>
+                        </div>
+                        <div class="order-type-option" data-type="takeaway" onclick="selectOrderType(this)">
+                            <i class="fas fa-shopping-bag"></i>
+                            <strong>Bawa Pulang</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TABLE SELECTION (Only for Dine In) -->
+                <div class="form-group meja-section" id="meja-section">
                     <label class="form-label"><strong>Pilih Meja *</strong></label>
 
                     <input type="hidden" id="table-number">
@@ -802,13 +826,10 @@
                         @endphp
 
                         <div class="col-4 col-md-3">
-                            <button
-                                type="button"
+                            <button type="button"
                                 class="btn meja-btn w-100 {{ $isAvailable ? 'btn-outline-primary' : 'btn-danger disabled' }}"
-                                data-id="{{ $meja->meja_id }}"
-                                data-name="{{ $meja->meja_nama }}"
-                                data-kapasitas="{{ $meja->meja_kapasitas }}"
-                                {{ $isAvailable ? '' : 'disabled' }}
+                                data-id="{{ $meja->meja_id }}" data-name="{{ $meja->meja_nama }}"
+                                data-kapasitas="{{ $meja->meja_kapasitas }}" {{ $isAvailable ? '' : 'disabled' }}
                                 onclick="selectMeja(this)">
 
                                 <strong>{{ $meja->meja_nama }}</strong><br>
@@ -826,15 +847,21 @@
                 <div class="form-group">
                     <label class="form-label">Pembayaran *</label>
                     <div class="payment-methods">
-                        <div class="payment-method active" data-method="cash" onclick="selectPayment(this)"><i class="fas fa-money-bill-wave"></i><span>Tunai</span></div>
-                        <div class="payment-method" data-method="qris" onclick="selectPayment(this)"><i class="fas fa-qrcode"></i><span>QRIS</span></div>
-                        <div class="payment-method" data-method="debit" onclick="selectPayment(this)"><i class="fas fa-credit-card"></i><span>Debit</span></div>
-                        <div class="payment-method" data-method="ewallet" onclick="selectPayment(this)"><i class="fas fa-wallet"></i><span>E-Wallet</span></div>
+                        <div class="payment-method active" data-method="cash" onclick="selectPayment(this)"><i
+                                class="fas fa-money-bill-wave"></i><span>Tunai</span></div>
+                        <div class="payment-method" data-method="qris" onclick="selectPayment(this)"><i
+                                class="fas fa-qrcode"></i><span>QRIS</span></div>
+                        <div class="payment-method" data-method="debit" onclick="selectPayment(this)"><i
+                                class="fas fa-credit-card"></i><span>Debit</span></div>
+                        <div class="payment-method" data-method="ewallet" onclick="selectPayment(this)"><i
+                                class="fas fa-wallet"></i><span>E-Wallet</span></div>
                     </div>
                 </div>
-                <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-control" id="order-notes"></textarea></div>
+                <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-control"
+                        id="order-notes"></textarea></div>
             </div>
-            <div class="modal-footer"><button class="btn-checkout" onclick="submitOrder()"><i class="fas fa-check-circle"></i> Konfirmasi</button></div>
+            <div class="modal-footer"><button class="btn-checkout" onclick="submitOrder()"><i
+                        class="fas fa-check-circle"></i> Konfirmasi</button></div>
         </div>
     </div>
 
@@ -843,7 +870,7 @@
             <div class="modal-body success-modal">
                 <div class="success-icon"><i class="fas fa-check"></i></div>
                 <h3>Pesanan Berhasil!</h3>
-                <p>Pesanan Anda sedang diproses</p>
+                <p id="success-message">Pesanan Anda sedang diproses</p>
                 <div class="order-number" id="order-number">#ORD-001</div>
                 <button class="btn-done" onclick="closeSuccess()"><i class="fas fa-home"></i> Kembali</button>
             </div>
@@ -852,11 +879,42 @@
 
     <div class="toast" id="toast"></div>
     <script src="{{ asset('bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="{{ config('midtrans.client_key') }}">
+    </script>
+
     <script>
         let cart = [];
         let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
         let selectedPayment = 'cash';
         let selectedMeja = null;
+        let selectedOrderType = 'dine_in';
+
+        // ORDER TYPE SELECTION
+        function selectOrderType(el) {
+            document.querySelectorAll('.order-type-option')
+                .forEach(opt => opt.classList.remove('active'));
+
+            el.classList.add('active');
+            selectedOrderType = el.dataset.type;
+
+            const mejaSection = document.getElementById('meja-section');
+
+            if (selectedOrderType === 'takeaway') {
+                mejaSection.style.display = 'none';
+
+                // 🔥 RESET MEJA TOTAL
+                selectedMeja = null;
+                document.getElementById('table-number').value = '';
+                document.getElementById('meja-info').textContent = 'Belum memilih meja';
+                document.querySelectorAll('.meja-btn')
+                    .forEach(b => b.classList.remove('active'));
+
+            } else {
+                mejaSection.style.display = 'block';
+            }
+        }
+
 
         function selectMeja(btn) {
             document.querySelectorAll('.meja-btn').forEach(b => b.classList.remove('active'));
@@ -871,8 +929,7 @@
             document.getElementById('table-number').value = selectedMeja.id;
 
             document.getElementById('meja-info').innerHTML =
-                `Meja dipilih: <strong>${selectedMeja.name}</strong>
-        (Kapasitas ${selectedMeja.kapasitas} orang)`;
+                `Meja dipilih: <strong>${selectedMeja.name}</strong> (Kapasitas ${selectedMeja.kapasitas} orang)`;
         }
 
 
@@ -883,7 +940,8 @@
                 this.classList.add('active');
                 const cat = this.dataset.category;
                 document.querySelectorAll('.menu-card').forEach(card => {
-                    card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'block' : 'none';
+                    card.style.display = (cat === 'all' || card.dataset.category === cat) ? 'block' :
+                        'none';
                 });
             };
         });
@@ -918,7 +976,8 @@
             document.getElementById('cart-badge').textContent = cart.reduce((sum, item) => sum + item.qty, 0);
 
             if (cart.length === 0) {
-                document.getElementById('cart-body').innerHTML = '<div class="empty-cart"><i class="fas fa-shopping-cart"></i><h4>Keranjang Kosong</h4></div>';
+                document.getElementById('cart-body').innerHTML =
+                    '<div class="empty-cart"><i class="fas fa-shopping-cart"></i><h4>Keranjang Kosong</h4></div>';
                 document.getElementById('cart-footer').style.display = 'none';
                 return;
             }
@@ -1013,8 +1072,14 @@
             const table = document.getElementById('table-number').value;
             const notes = document.getElementById('order-notes').value;
 
-            if (!name || !table) {
-                showToast('⚠ Harap isi nama dan pilih meja');
+            // Validation
+            if (!name) {
+                showToast('⚠ Harap isi nama');
+                return;
+            }
+
+            if (selectedOrderType === 'dine_in' && !table) {
+                showToast('⚠ Harap pilih meja untuk Makan di Sini');
                 return;
             }
 
@@ -1022,15 +1087,22 @@
             const tax = Math.round(subtotal * 0.1);
             const total = subtotal + tax;
 
+            // Adjust order data to match controller expectations
             const orderData = {
                 customer_name: name,
-                table_number: table,
-                payment_method: selectedPayment,
-                notes: notes,
-                items: cart,
-                subtotal: subtotal,
-                tax: tax,
-                total: total
+                table_number: selectedOrderType === 'dine_in' ? parseInt(table) : null,
+                order_type: selectedOrderType,
+                payment_method: selectedPayment.toLowerCase(), // convert to lowercase
+                notes: notes || '',
+                items: cart.map(item => ({
+                    menu_id: item.menu_id,
+                    menu_name: item.menu_name,
+                    menu_price: parseFloat(item.menu_price),
+                    qty: parseInt(item.qty)
+                })),
+                subtotal: parseFloat(subtotal),
+                tax: parseFloat(tax),
+                total: parseFloat(total)
             };
 
             try {
@@ -1038,25 +1110,69 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     body: JSON.stringify(orderData)
                 });
 
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    showToast('❌ Server error - Invalid response format');
+                    return;
+                }
+
                 const result = await response.json();
 
-                if (result.success) {
-                    document.getElementById('order-number').textContent = result.order_number;
-                    document.getElementById('checkout-modal').classList.remove('active');
-                    document.getElementById('success-modal').classList.add('active');
-                    resetCart();
-                } else {
-                    showToast('❌ Gagal membuat pesanan');
+                // Check HTTP status
+                if (!response.ok) {
+                    showToast('❌ ' + (result.message || 'Terjadi kesalahan'));
+                    return;
                 }
+
+                if (result.payment_data?.snap_token) {
+                    window.snap.pay(result.payment_data.snap_token, {
+                        onSuccess: () => showSuccessMessage(result.order_number, 'Pembayaran berhasil'),
+                        onPending: () => showSuccessMessage(result.order_number, 'Menunggu pembayaran'),
+                        onError: () => showToast('❌ Pembayaran gagal'),
+                        onClose: () => showToast('⚠ Pembayaran dibatalkan'),
+                    });
+                } else {
+                    showSuccessMessage(result.order_number, 'Pesanan berhasil dibuat');
+                }
+
             } catch (error) {
-                console.error(error);
-                showToast('❌ Terjadi kesalahan server');
+                console.error('Submit order error:', error);
+                showToast('❌ Terjadi kesalahan server: ' + error.message);
             }
+        }
+
+        async function updatePaymentStatus(orderId, status, paymentData) {
+            try {
+                await fetch(`/api/orders/${orderId}/payment-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        status: status,
+                        payment_data: paymentData
+                    })
+                });
+            } catch (error) {
+                console.error('Error updating payment status:', error);
+            }
+        }
+
+        function showSuccessMessage(orderNumber, message) {
+            document.getElementById('order-number').textContent = orderNumber;
+            document.getElementById('success-message').textContent = message;
+            document.getElementById('checkout-modal').classList.remove('active');
+            document.getElementById('success-modal').classList.add('active');
         }
 
 
@@ -1066,6 +1182,12 @@
             document.getElementById('customer-name').value = '';
             document.getElementById('table-number').value = '';
             document.getElementById('order-notes').value = '';
+
+            // Reset order type
+            document.querySelectorAll('.order-type-option').forEach(opt => opt.classList.remove('active'));
+            document.querySelector('.order-type-option[data-type="dine_in"]').classList.add('active');
+            selectedOrderType = 'dine_in';
+            document.getElementById('meja-section').style.display = 'block';
 
             // Reset meja
             document.querySelectorAll('.meja-btn').forEach(b => b.classList.remove('active'));

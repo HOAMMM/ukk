@@ -20,9 +20,15 @@ class Order extends Model
         'order_meja',
         'order_total',
         'order_qty',
+        'order_metode',
+        'order_type',
         'order_change',
         'order_status',
         'created_at'
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
     ];
 
     // Relasi ke transaksi
