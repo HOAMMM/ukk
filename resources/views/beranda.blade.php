@@ -1,6 +1,3 @@
-@extends('template.home')
-@section('content_customer')
-
 <!-- Categories -->
 <div class="categories mt-2">
     <div class="category-item active" data-category="all">

@@ -18,6 +18,7 @@
                             <th>Total</th>
                             <th>Bayar</th>
                             <th>Kembalian</th>
+                            <th>Catatan</th>
                             <th>Status</th>
                             <th>Tanggal</th>
                             <th class="text-center">Aksi</th>
@@ -40,6 +41,9 @@
 
                             <td class="text-end">
                                 Rp {{ number_format($item->transaksi_change,0,',','.') }}
+                            </td>
+                            <td>
+                                {{ $item->transaksi_message ?? '-' }}
                             </td>
 
                             <td>

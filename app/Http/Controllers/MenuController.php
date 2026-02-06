@@ -78,29 +78,32 @@ class MenuController extends Controller
         $menu = Menu::findOrFail($id);
 
         $data = $request->validate([
-            'menu_name' => 'required',
+            'menu_name'     => 'required',
             'menu_kategori' => 'required',
-            'menu_price' => 'required|numeric',
-            'menu_desc' => 'nullable',
-            'menu_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+            'menu_price'    => 'required|numeric',
+            'menu_desc'     => 'nullable|string|max:500',
+            'menu_image'    => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
         ]);
 
-        // Handle upload gambar baru
+        // upload gambar baru
         if ($request->hasFile('menu_image')) {
-            // Hapus gambar lama jika ada
+
+            // hapus gambar lama
             if ($menu->menu_image && file_exists(public_path('uploads/menu/' . $menu->menu_image))) {
                 unlink(public_path('uploads/menu/' . $menu->menu_image));
             }
 
             $image = $request->file('menu_image');
-            $imageName = time() . '.' . $image->extension();
+            $imageName = 'menu_' . time() . '.' . $image->extension();
+
             $image->move(public_path('uploads/menu'), $imageName);
+
             $data['menu_image'] = $imageName;
         }
 
         $menu->update($data);
 
-        return redirect()->route('dashboard.menu')->with('success', 'Menu berhasil diupdate!');
+        return back()->with('success', '✅ Menu berhasil diperbarui');
     }
 
     public function destroy($id)

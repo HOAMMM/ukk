@@ -29,7 +29,7 @@ Route::prefix('orders')->group(function () {
     // Create new order
     Route::post('/', [OrderCustomerController::class, 'store']);
 
-    // Get order details
+    // Get order detailsx
     Route::get('/{orderId}', [OrderCustomerController::class, 'show']);
 
     // Check order status

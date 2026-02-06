@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Warung Nusantara</title>
+    <title>Restaurant HQ</title>
     <link rel="stylesheet" href="{{ asset('bootstrap/css/bootstrap.min.css') }}">
     <link href="{{ asset('bootstrap/icon/bootstrap-icons.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('fontawesome/css/all.min.css') }}">
@@ -501,6 +501,14 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            /* icon di atas */
+            align-items: center;
+            /* center horizontal */
+            justify-content: center;
+            /* center vertical */
+            text-align: center;
         }
 
         .payment-method.active {
@@ -511,7 +519,6 @@
         .payment-method i {
             font-size: 1.5rem;
             margin-bottom: 6px;
-            display: block;
         }
 
         /* Order Type */
@@ -529,6 +536,14 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            /* icon di atas */
+            align-items: center;
+            /* tengah horizontal */
+            justify-content: center;
+            /* tengah vertikal */
+            text-align: center;
         }
 
         .order-type-option.active {
@@ -539,12 +554,10 @@
         .order-type-option i {
             font-size: 2rem;
             margin-bottom: 8px;
-            display: block;
             color: #ff6b35;
         }
 
         .order-type-option strong {
-            display: block;
             font-size: 1rem;
         }
 
@@ -682,7 +695,7 @@
 <body>
     <div class="header">
         <div class="header-top">
-            <div class="logo"><i class="fas fa-utensils"></i> Warung Nusantara</div>
+            <div class="logo"><i class="fas fa-utensils"></i> Restaurant HQ</div>
             <div class="header-icons">
                 <button class="icon-btn" onclick="toggleFavorites()"><i class="fas fa-heart"></i></button>
                 <button class="icon-btn" onclick="toggleCart()"><i class="fas fa-shopping-cart"></i><span
@@ -794,8 +807,8 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Nama *</label>
-                    <input type="text" class="form-control" id="customer-name" required>
+                    <label class="form-label">Nama </label>
+                    <input type="text" class="form-control" id="customer-name" required placeholder="Masukan Nama Anda">
                 </div>
 
                 <!-- ORDER TYPE: Dine In / Takeaway -->
@@ -857,8 +870,13 @@
                                 class="fas fa-wallet"></i><span>E-Wallet</span></div>
                     </div>
                 </div>
-                <div class="form-group"><label class="form-label">Catatan</label><textarea class="form-control"
-                        id="order-notes"></textarea></div>
+                <div class="form-group"><label class="form-label">Catatan (optional)</label>
+                    <textarea
+                        class="form-control"
+                        id="order-notes"
+                        name="notes"
+                        placeholder="Tambahkan catatan jika ada (opsional)"></textarea>
+                </div>
             </div>
             <div class="modal-footer"><button class="btn-checkout" onclick="submitOrder()"><i
                         class="fas fa-check-circle"></i> Konfirmasi</button></div>
@@ -1198,6 +1216,7 @@
             document.querySelectorAll('.payment-method').forEach(p => p.classList.remove('active'));
             document.querySelector('.payment-method[data-method="cash"]').classList.add('active');
             selectedPayment = 'cash';
+            resetCart(); // ⬅️ INI YANG KURANG
         }
 
 

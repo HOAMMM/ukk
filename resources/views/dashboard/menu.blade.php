@@ -76,8 +76,8 @@
                             <td>Rp {{ number_format($menu->menu_price) }}</td>
                             <td>{{ $menu->menu_desc ?? '-' }}</td>
                             <td class="text-center align-middle">
-                                <button class="btn btn-sm btn-warning"
-                                    onclick="showEdit({{ $menu }})">
+                                <button class="btn btn-sm btn-warning btn-edit"
+                                    data-menu='@json($menu)'>
                                     <i class="fas fa-pencil"></i>
                                 </button>
 
@@ -120,7 +120,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">✏️ Edit Menu</h5>
-                        <button class="btn-close" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
 
                     <div class="modal-body">
@@ -197,29 +197,66 @@
     }
 
     function showEdit(menu) {
-        // Isi data ke form
-        document.getElementById('e_id').value = menu.menu_id;
+
+        // isi field
         document.getElementById('e_menu_name').value = menu.menu_name;
         document.getElementById('e_menu_kategori').value = menu.menu_kategori;
         document.getElementById('e_menu_price').value = menu.menu_price;
-        document.getElementById('e_menu_desc').value = menu.menu_desc || '';
+        document.getElementById('e_menu_desc').value = menu.menu_desc ?? '';
 
-        // Tampilkan gambar saat ini jika ada
+        // gambar lama
+        let imageBox = document.getElementById('current_image');
+        imageBox.innerHTML = '';
+
         if (menu.menu_image) {
-            document.getElementById('current_image').innerHTML = `
-                <label class="form-label">Gambar Saat Ini:</label><br>
-                <img src="/uploads/menu/${menu.menu_image}" width="100" class="rounded shadow">
+            imageBox.innerHTML = `
+                <label class="form-label">Gambar Saat Ini</label><br>
+                <img src="/uploads/menu/${menu.menu_image}"
+                     class="rounded shadow mt-1" width="120">
             `;
-        } else {
-            document.getElementById('current_image').innerHTML = '';
         }
 
-        // Set action form untuk update
-        document.getElementById('editForm').action = `/dashboard/update/menu/${menu.menu_id}`;
+        // set action form (PAKAI ROUTE YANG BENAR)
+        document.getElementById('editForm').action =
+            `/dashboard/menu/${menu.menu_id}`;
 
-        // Tampilkan modal
-        var modal = new bootstrap.Modal(document.getElementById('editModal'));
-        modal.show();
+        // show modal
+        new bootstrap.Modal(document.getElementById('editModal')).show();
     }
 </script>
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        document.querySelectorAll('.btn-edit').forEach(btn => {
+            btn.addEventListener('click', function() {
+
+                let menu = JSON.parse(this.dataset.menu);
+
+                document.getElementById('e_menu_name').value = menu.menu_name;
+                document.getElementById('e_menu_kategori').value = menu.menu_kategori;
+                document.getElementById('e_menu_price').value = menu.menu_price;
+                document.getElementById('e_menu_desc').value = menu.menu_desc ?? '';
+
+                let imageBox = document.getElementById('current_image');
+                imageBox.innerHTML = '';
+
+                if (menu.menu_image) {
+                    imageBox.innerHTML = `
+                    <label class="form-label">Gambar Saat Ini</label><br>
+                    <img src="/uploads/menu/${menu.menu_image}"
+                         class="rounded shadow mt-1" width="120">
+                `;
+                }
+
+                document.getElementById('editForm').action =
+                    `/dashboard/menu/${menu.menu_id}`;
+
+                new bootstrap.Modal(document.getElementById('editModal')).show();
+            });
+        });
+
+    });
+</script>
+@endpush
 @endpush

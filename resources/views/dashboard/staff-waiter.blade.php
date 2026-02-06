@@ -52,12 +52,12 @@
 
                         <div class="mb-3">
                             <label>Password</label>
-                            <input type="password" name="password" class="form-control">
+                            <input type="password" name="password" class="form-control" placeholder="password">
                         </div>
 
                         <div class="mb-3">
                             <label>Konfirmasi Password</label>
-                            <input type="password" name="password_confirmation" class="form-control">
+                            <input type="password" name="password_confirmation" class="form-control" placeholder="konfirmasi password">
                         </div>
 
                     </div>
@@ -128,30 +128,34 @@
                                         <div class="modal-content">
                                             <div class="modal-header">
                                                 <h5 class="modal-title">Edit Staff waiter</h5>
-                                                <button class="btn-close" data-bs-dismiss="modal"></button>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
 
                                             <div class="modal-body">
-                                                <input type="hidden" id="e_id">
+                                                <input type="hidden" name="id" id="e_id" value="{{ old('id') }}">
 
                                                 <div class="mb-3">
                                                     <label>Username</label>
-                                                    <input type="text" class="form-control" name="username" id="e_username">
+                                                    <input type="text" class="form-control" name="username"
+                                                        value="{{ old('username') ?? '' }}" id="e_username">
                                                 </div>
 
                                                 <div class="mb-3">
                                                     <label>Nama Lengkap</label>
-                                                    <input type="text" class="form-control" name="namleng" id="e_namleng">
+                                                    <input type="text" class="form-control" name="namleng"
+                                                        value="{{ old('namleng') ?? '' }}" id="e_namleng">
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
                                                         <label>Email</label>
-                                                        <input type="email" class="form-control" name="email" id="e_email">
+                                                        <input type="email" class="form-control" name="email"
+                                                            value="{{ old('email') ?? '' }}" id="e_email">
                                                     </div>
 
                                                     <div class="col-md-6 mb-3">
                                                         <label>No HP</label>
-                                                        <input type="text" class="form-control" name="user_phone" id="e_phone">
+                                                        <input type="text" class="form-control" name="user_phone"
+                                                            value="{{ old('user_phone') ?? '' }}" id="e_phone">
                                                     </div>
                                                 </div>
                                                 <div class="mb-3">
@@ -208,7 +212,7 @@
                                             </div>
 
                                             <div class="modal-footer">
-                                                <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                                 <button class="btn btn-primary" type="submit">Update</button>
                                             </div>
                                         </div>
@@ -243,6 +247,7 @@
         </div>
     </div>
 </div>
+
 <script>
     function confirmSubmit() {
         Swal.fire({

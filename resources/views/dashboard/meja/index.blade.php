@@ -309,18 +309,24 @@
     <div class="container-fluid">
         <!-- Header -->
         <div class="page-header">
-            <div class="d-flex align-items-center justify-content-between">
+            <div class="page-header-content d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                    <h2 class="mb-1">
-                        <i class="fas fa-chair me-2"></i>
+                    <h2>
+                        <i class="fas fa-chair"></i>
                         Manajemen Meja
                     </h2>
-                    <p class="mb-0 opacity-90">Kelola dan pantau status meja restoran</p>
+                    <p>Kelola dan pantau status meja restoran secara real-time</p>
+                    @if($mejas->count() > 0)
+                    <div class="header-badge">
+                        <i class="fas fa-check-circle me-2"></i>{{ $mejas->count() }} Meja Terdaftar
+                    </div>
+                    @endif
                 </div>
-                <div class="text-end d-none d-md-block">
-                    <div class="fs-5 fw-bold">{{ $mejas->count() }}</div>
-                    <small class="opacity-75">Total Meja</small>
-                </div>
+                @if($mejas->where('meja_status', 'terisi')->count() > 0)
+                <button class="btn btn-reset-all btn-secondary" onclick="resetAllTables()">
+                    <i class="fas fa-redo me-2"></i>Reset Semua Meja
+                </button>
+                @endif
             </div>
         </div>
 
@@ -370,8 +376,7 @@
                     <div class="col-md-3">
                         <label class="form-label fw-semibold mb-2 d-none d-md-block">&nbsp;</label>
                         <button type="submit" class="btn btn-primary btn-add btn-lg w-100">
-                            <i class="fas fa-plus-lg me-2"></i>
-                            Tambah Meja
+                            <i class="fas fa-plus-circle me-2"></i> Tambah Meja
                         </button>
                     </div>
                 </div>
@@ -468,6 +473,58 @@
 
     @push('scripts')
     <script>
+        function resetAllTables() {
+            Swal.fire({
+                title: 'Reset Semua Meja?',
+                html: 'Semua meja akan diubah menjadi status <strong>KOSONG</strong>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#64748b',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: '<i class="fas fa-redo me-2"></i>Ya, Reset Semua',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses...',
+                        html: 'Sedang mereset semua meja',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    fetch('/dashboard/meja/reset-all', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(res => {
+                            if (res.status) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: res.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => location.reload());
+                            } else {
+                                Swal.fire('Gagal', res.message, 'error');
+                            }
+                        })
+                        .catch(err => {
+                            Swal.fire('Error', 'Terjadi kesalahan pada server', 'error');
+                            console.error(err);
+                        });
+                }
+            });
+        }
         // Hapus Meja
         document.querySelectorAll('.btn-delete-meja').forEach(btn => {
             btn.addEventListener('click', function() {

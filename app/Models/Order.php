@@ -21,6 +21,7 @@ class Order extends Model
         'order_total',
         'order_qty',
         'order_metode',
+        'order_message',
         'order_type',
         'order_change',
         'order_status',
@@ -39,6 +40,6 @@ class Order extends Model
 
     public function meja()
     {
-        return $this->belongsTo(Meja::class, 'order_meja_id', 'meja_id');
+        return $this->belongsTo(Meja::class, 'order_meja', 'meja_id');
     }
 }

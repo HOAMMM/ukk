@@ -72,9 +72,9 @@
     {{-- FILTER SYSTEM --}}
     <div class="filter-card shadow-sm">
         <div class="d-flex gap-2 mb-2">
-            <button onclick="window.print()" class="btn btn-outline-primary btn-sm">
+            <!-- <button onclick="window.print()" class="btn btn-outline-primary btn-sm">
                 <i class="fas fa-print me-1"></i> Cetak PDF
-            </button>
+            </button> -->
             <a href="{{ route('laporan.export.excel', request()->all()) }}" class="btn btn-success btn-sm">
                 <i class="fas fa-file-excel me-1"></i> Download Excel
             </a>

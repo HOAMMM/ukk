@@ -23,7 +23,7 @@
                     @csrf
 
                     <div class="modal-header">
-                        <h5 class="modal-title">Tambah Staff Kasir</h5>
+                        <h5 class="modal-title">Tambah Staff kasir</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
 
@@ -101,7 +101,7 @@
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title">Detail Staff Kasir</h5>
+                                            <h5 class="modal-title">Detail Staff kasir</h5>
                                             <button class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
 
@@ -115,93 +115,110 @@
                                 </div>
                             </div>
 
-                            @foreach ($staff as $item)
                             <button class="btn btn-sm btn-warning"
-                                data-bs-toggle="modal"
-                                data-bs-target="#editModal{{ $item->id }}">
+                                onclick="showEdit({{ $item }})">
                                 <i class="fas fa-pencil"></i>
                             </button>
-
-                            <div class="modal fade" id="editModal{{ $item->id }}" tabindex="-1">
+                            <div class="modal fade" id="editModal" tabindex="-1">
                                 <div class="modal-dialog">
-                                    <form method="POST"
-                                        action="{{ route('dashboard.kasir.update', $item->id) }}">
+                                    <form method="POST" id="editForm">
                                         @csrf
                                         @method('PUT')
 
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Edit Staff Kasir</h5>
-                                                <button class="btn-close" data-bs-dismiss="modal"></button>
+                                                <h5 class="modal-title">Edit Staff kasir</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
 
                                             <div class="modal-body">
+                                                <input type="hidden" name="id" id="e_id" value="{{ old('id') }}">
 
                                                 <div class="mb-3">
                                                     <label>Username</label>
-                                                    <input type="text" name="username" class="form-control"
-                                                        value="{{ session('edit_id') == $item->id
-                                ? old('username', $item->username)
-                                : $item->username }}">
+                                                    <input type="text" class="form-control" name="username"
+                                                        value="{{ old('username') ?? '' }}" id="e_username">
                                                 </div>
 
                                                 <div class="mb-3">
                                                     <label>Nama Lengkap</label>
-                                                    <input type="text" name="namleng" class="form-control"
-                                                        value="{{ session('edit_id') == $item->id
-                                ? old('namleng', $item->namleng)
-                                : $item->namleng }}">
+                                                    <input type="text" class="form-control" name="namleng"
+                                                        value="{{ old('namleng') ?? '' }}" id="e_namleng">
                                                 </div>
-
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
                                                         <label>Email</label>
-                                                        <input type="email" name="email" class="form-control"
-                                                            value="{{ session('edit_id') == $item->id
-                                    ? old('email', $item->email)
-                                    : $item->email }}">
+                                                        <input type="email" class="form-control" name="email"
+                                                            value="{{ old('email') ?? '' }}" id="e_email">
                                                     </div>
+
                                                     <div class="col-md-6 mb-3">
                                                         <label>No HP</label>
-                                                        <input type="text" name="user_phone" class="form-control"
-                                                            value="{{ session('edit_id') == $item->id
-                                    ? old('user_phone', $item->user_phone)
-                                    : $item->user_phone }}">
+                                                        <input type="text" class="form-control" name="user_phone"
+                                                            value="{{ old('user_phone') ?? '' }}" id="e_phone">
                                                     </div>
                                                 </div>
-
-                                                <hr>
-                                                <small class="text-muted">*Isi jika ingin mengganti password</small>
-
                                                 <div class="mb-3">
                                                     <label>Password Saat Ini</label>
-                                                    <input type="password" name="current_password" class="form-control" placeholder="password lama">
+                                                    <div class="input-group">
+                                                        <input type="password"
+                                                            class="form-control"
+                                                            id="current_password"
+                                                            name="current_password"
+                                                            placeholder="Password lama">
+                                                        <span class="input-group-text"
+                                                            style="cursor:pointer"
+                                                            onclick="togglePassword('current_password', this)">
+                                                            <i class="fas fa-eye"></i>
+                                                        </span>
+                                                    </div>
                                                 </div>
-
                                                 <div class="row">
+                                                    <small class="text-muted">
+                                                        *Isi jika ingin mengganti password
+                                                    </small>
                                                     <div class="col-md-6 mb-3">
                                                         <label>Password Baru</label>
-                                                        <input type="password" name="password" class="form-control" placeholder="password baru">
+                                                        <div class="input-group">
+                                                            <input type="password"
+                                                                class="form-control"
+                                                                id="password"
+                                                                name="password"
+                                                                placeholder="Password baru">
+                                                            <span class="input-group-text"
+                                                                style="cursor:pointer"
+                                                                onclick="togglePassword('password', this)">
+                                                                <i class="fas fa-eye"></i>
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                     <div class="col-md-6 mb-3">
-                                                        <label>Konfirmasi Password</label>
-                                                        <input type="password" name="password_confirmation" class="form-control" placeholder="konfirmasi password baru">
+                                                        <label>Konfirmasi Password Baru</label>
+                                                        <div class="input-group">
+                                                            <input type="password"
+                                                                class="form-control"
+                                                                id="password_confirmation"
+                                                                name="password_confirmation"
+                                                                placeholder="Ulangi password baru">
+                                                            <span class="input-group-text"
+                                                                style="cursor:pointer"
+                                                                onclick="togglePassword('password_confirmation', this)">
+                                                                <i class="fas fa-eye"></i>
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
 
                                             </div>
 
                                             <div class="modal-footer">
-                                                <button class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                                 <button class="btn btn-primary" type="submit">Update</button>
                                             </div>
                                         </div>
                                     </form>
                                 </div>
                             </div>
-                            @endforeach
-
-
 
                             <form id="formHapus{{ $item->id }}"
                                 action="{{ route('dashboard.kasir.destroy', $item->id) }}"
@@ -230,6 +247,7 @@
         </div>
     </div>
 </div>
+
 <script>
     function confirmSubmit() {
         Swal.fire({
@@ -295,9 +313,8 @@
         document.getElementById('e_namleng').value = data.namleng;
         document.getElementById('e_email').value = data.email;
         document.getElementById('e_phone').value = data.user_phone;
-        // document.getElementById('current_password').value = data.user_passtext;
 
-        document.getElementById('edit_id').action =
+        document.getElementById('editForm').action =
             `/dashboard/staff-kasir/${data.id}`;
 
         new bootstrap.Modal(document.getElementById('editModal')).show();

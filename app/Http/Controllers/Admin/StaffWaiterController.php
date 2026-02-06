@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
-
 
 class StaffWaiterController extends Controller
 {
     public function index()
     {
-        $staff = User::where('id_level', 2)->get(); // 2 = waiter
+        $staff = User::where('id_level', operator: 2)->get(); // 3 = Waiter
         return view('dashboard.staff-waiter', compact('staff'));
     }
 
@@ -44,27 +44,28 @@ class StaffWaiterController extends Controller
             'email'    => $request->email,
             'user_phone' => $request->user_phone,
             'password' => Hash::make($request->password),
-            'user_code' => 'WTR' . strtoupper(uniqid()),
+            'user_code' => 'KSR' . strtoupper(uniqid()),
             'user_passtext' => $request->password,
             'remember_token' => null,
-            'id_level' => 2,
+            'id_level' => 3,
             'created_at' => now(),
         ]);
 
-        return back()->with('success', 'Staff waiter berhasil ditambahkan');
+        return back()->with('success', 'Staff Waiter berhasil ditambahkan');
     }
+
 
     public function update(Request $request, $id)
     {
-        // =========================
-        // VALIDASI DATA UTAMA
-        // =========================
-        $request->validate([
-            'username'    => 'required|unique:tb_users,username,' . $id,
-            'namleng'     => 'required',
-            'user_phone'  => 'required|numeric',
-            'email'       => 'required|email|unique:tb_users,email,' . $id,
-            'password'    => 'nullable|min:6|confirmed',
+        $user = User::findOrFail($id);
+
+        // Buat validator manual
+        $validator = Validator::make($request->all(), [
+            'username'   => 'required|unique:tb_users,username,' . $id,
+            'namleng'    => 'required',
+            'user_phone' => 'required|numeric',
+            'email'      => 'required|email|unique:tb_users,email,' . $id,
+            'password'   => 'nullable|min:6|confirmed',
         ], [
             'username.unique' => 'Username sudah digunakan',
             'email.unique'    => 'Email sudah digunakan',
@@ -72,7 +73,44 @@ class StaffWaiterController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok',
         ]);
 
-        $user = User::findOrFail($id);
+        // Validasi tambahan password lama
+        $validator->after(function ($validator) use ($request, $user) {
+
+            // Jika user mengisi password lama
+            if ($request->filled('current_password')) {
+
+                // Password lama salah
+                if (!Hash::check($request->current_password, $user->password)) {
+                    $validator->errors()->add('current_password', 'Password lama tidak cocok.');
+                }
+
+                // Password baru wajib diisi
+                if (!$request->filled('password')) {
+                    $validator->errors()->add('password', 'Password baru wajib diisi.');
+                }
+
+                // Konfirmasi password wajib diisi
+                if (!$request->filled('password_confirmation')) {
+                    $validator->errors()->add('password_confirmation', 'Konfirmasi password wajib diisi.');
+                }
+            }
+
+            // Jika password baru diisi tapi password lama kosong
+            if ($request->filled('password') && !$request->filled('current_password')) {
+                $validator->errors()->add('current_password', 'Password lama wajib diisi.');
+            }
+        });
+
+
+        // Jika validasi gagal, redirect kembali + input + edit_id
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('modal', 'edit')
+                ->with('edit_id', $id);
+            // ⚡ ini dipakai di blade untuk buka modal edit otomatis
+        }
 
         // =========================
         // DATA YANG DIUPDATE
@@ -84,23 +122,20 @@ class StaffWaiterController extends Controller
             'user_phone' => $request->user_phone,
         ];
 
-        // =========================
-        // JIKA PASSWORD DIISI
-        // =========================
         if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-
-            // ⚠️ SANGAT TIDAK DISARANKAN
-            // $data['user_passtext'] = $request->password;
+            $data['password'] = Hash::make($request->password);  // password hash
+            $data['user_passtext'] = $request->password;         // simpan password asli
         }
 
-        // =========================
-        // UPDATE KE DATABASE
-        // =========================
+        $user->update($data);
+
+
         $user->update($data);
 
         return back()->with('success', 'Data staff berhasil diperbarui');
     }
+
+
 
 
 

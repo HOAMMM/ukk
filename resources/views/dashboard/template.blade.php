@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{{ asset('sweetalert/sweetalert2.min.css') }}">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('fontawesome/css/all.min.css') }}">
 
     <style>
         :root {
@@ -647,9 +647,9 @@
                 <i class="fas fa-hamburger"></i>
                 <span>Menu</span>
             </a>
-            <a href="/dashboard/kategori-produk" class="nav-link {{ request()->is('dashboard/kategori-produk*') ? 'active' : '' }}">
+            <a href="/dashboard/kategori" class="nav-link {{ request()->is('dashboard/kategori-produk*') ? 'active' : '' }}">
                 <i class="fas fa-tags"></i>
-                <span>Kategori Produk</span>
+                <span>Kategori</span>
             </a>
             <div class="sidebar-section-header">Setting</div>
             <a href="/dashboard/pengaturan" class="nav-link {{ request()->is('dashboard/pengaturan*') ? 'active' : '' }}">

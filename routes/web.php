@@ -72,7 +72,7 @@ Route::middleware(['auth'])->group(function () {
             ->name('dashboard.menu.destroy');
 
         // KATEGORI
-        Route::resource('/dashboard/kategori-produk', KategoriController::class)
+        Route::resource('/dashboard/kategori', KategoriController::class)
             ->only(['index', 'store', 'update', 'destroy'])->names([
                 'index'   => 'dashboard.kategori-produk',
                 'store'   => 'dashboard.store.kategori',
@@ -88,6 +88,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/dashboard/staff-waiter', [StaffWaiterController::class, 'index'])->name('dashboard.staff-waiter');
         Route::post('/dashboard/staff-waiter', [StaffWaiterController::class, 'store'])->name('dashboard.waiter.store');
+        Route::put('/dashboard/staff-waiter/{id}', [StaffWaiterController::class, 'update'])->name('dashboard.waiter.update');
         Route::delete('/dashboard/staff-waiter/{id}', [StaffWaiterController::class, 'destroy'])->name('dashboard.waiter.destroy');
     });
 
@@ -103,6 +104,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/dashboard/meja/{id}', [MejaController::class, 'update']);
         Route::delete('/dashboard/meja/{id}', [MejaController::class, 'destroy']);
         Route::patch('/dashboard/meja/{id}/toggle', [MejaController::class, 'toggle']);
+
+        // ✨ ROUTE BARU: Reset semua meja
+        Route::post('/dashboard/meja/reset-all', [MejaController::class, 'resetAll']);
     });
 
     /*

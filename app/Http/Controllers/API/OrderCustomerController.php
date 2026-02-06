@@ -81,6 +81,7 @@ class OrderCustomerController extends Controller
                 'order_qty'     => collect($request->items)->sum('qty'),
                 'order_change'  => 0,
                 'order_type'    => $request->order_type,
+                'order_message' => $request->notes,
                 'order_metode' => strtoupper($request->payment_method),
                 'order_status'  => 'pending',
                 'created_at'    => now()
@@ -101,6 +102,7 @@ class OrderCustomerController extends Controller
                 'transaksi_total'   => $request->total,
                 'transaksi_amount'  => 0, // akan diisi saat payment
                 'transaksi_change'  => 0, // akan diisi saat payment
+                'transaksi_message' => $request->notes,
                 'transaksi_status'  => 'pending', // pending → success → failed
                 'transaksi_code'    => $kodeTransaksi,
                 'created_at'        => now()
