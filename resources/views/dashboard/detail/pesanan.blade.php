@@ -2,93 +2,80 @@
 
 @section('content')
 <div class="container mt-4">
-    <h2 class="mb-3">Daftar Pesanan</h2>
 
-    <table class="table table-striped align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>ID Pesanan</th>
-                <th>Nama Pelanggan</th>
-                <th>Meja</th>
-                <th>Status</th>
-                <th width="120">Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($orders as $order)
-            <tr>
-                <td>{{ $order->order_id }}</td>
-                <td>{{ $order->order_csname }}</td>
-                <td>{{ $order->meja->meja_nama ?? 'Takeaway' }}</td>
-                <td>
-                    <span class="badge bg-info">
-                        {{ $order->order_status }}
-                    </span>
-                </td>
-                <td>
-                    <button
-                        type="button"
-                        class="btn btn-primary btn-sm btn-detail"
-                        data-id="{{ $order->order_id }}">
-                        Lihat Detail
-                    </button>
-                </td>
-            </tr>
-            @endforeach
-        </tbody>
-    </table>
-</div>
+    <!-- CARD -->
+    <div class="card invoice-card">
+        <div class="card-body">
 
-{{-- MODAL DETAIL (SATU AJA) --}}
-<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Detail Pesanan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
+            <!-- HEADER FILTER -->
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
 
-            <div class="modal-body">
-                <div id="detail-content" class="text-center py-4">
-                    <div class="spinner-border text-primary"></div>
+                <div class="invoice-tabs">
+                    <button class="active">All <span>35</span></button>
+                    <button>Unpaid <span>5</span></button>
+                    <button>Paid <span>23</span></button>
+                    <button>Archived <span>17</span></button>
                 </div>
+
+                <input type="text" class="form-control search-input" placeholder="Search invoice">
             </div>
+
+            <!-- ACTION BUTTON -->
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+                <button class="btn btn-success-soft">✔ Mark as paid</button>
+                <button class="btn btn-warning-soft">✖ Mark as unpaid</button>
+                <button class="btn btn-light">🖨 Print</button>
+                <button class="btn btn-light text-danger">🗑 Delete</button>
+            </div>
+
+            <!-- TABLE -->
+            <div class="table-responsive">
+                <table class="table invoice-table align-middle">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox"></th>
+                            <th>Invoice</th>
+                            <th>Company</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="checkbox"></td>
+                            <td>#1001</td>
+                            <td class="fw-semibold">Tech Jungle</td>
+                            <td>14 Sep 2022</td>
+                            <td><span class="badge badge-unpaid">Unpaid</span></td>
+                            <td>$973.48</td>
+                            <td class="text-end action-icons">
+                                <i class="bi bi-eye"></i>
+                                <i class="bi bi-pencil"></i>
+                                <i class="bi bi-trash"></i>
+                            </td>
+                        </tr>
+
+                        <tr class="active-row">
+                            <td><input type="checkbox" checked></td>
+                            <td>#1001</td>
+                            <td class="fw-semibold">Tech Jungle</td>
+                            <td>14 Sep 2022</td>
+                            <td><span class="badge badge-paid">Paid</span></td>
+                            <td>$480.21</td>
+                            <td class="text-end action-icons">
+                                <i class="bi bi-eye"></i>
+                                <i class="bi bi-pencil"></i>
+                                <i class="bi bi-trash"></i>
+                            </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </div>
 </div>
-
-{{-- SCRIPT --}}
-<script>
-    const detailUrl = "{{ route('dashboard.detail.pesanan', ':id') }}";
-    const modalEl = document.getElementById('detailModal');
-    const modal = new bootstrap.Modal(modalEl);
-
-    document.querySelectorAll('.btn-detail').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const orderId = this.dataset.id;
-
-            document.getElementById('detail-content').innerHTML = `
-                <div class="spinner-border text-primary"></div>
-            `;
-
-            fetch(detailUrl.replace(':id', orderId))
-                .then(res => {
-                    if (!res.ok) throw new Error('Not Found');
-                    return res.text();
-                })
-                .then(html => {
-                    document.getElementById('detail-content').innerHTML = html;
-                    modal.show();
-                })
-                .catch(() => {
-                    document.getElementById('detail-content').innerHTML = `
-                        <div class="alert alert-danger text-center">
-                            Detail pesanan tidak ditemukan
-                        </div>
-                    `;
-                    modal.show();
-                });
-        });
-    });
-</script>
 @endsection

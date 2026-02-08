@@ -42,3 +42,4 @@ Route::prefix('orders')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::post('/payment/callback', [OrderCustomerController::class, 'paymentCallback']);
+Route::get('/payment/finish', [OrderCustomerController::class, 'paymentFinish']);

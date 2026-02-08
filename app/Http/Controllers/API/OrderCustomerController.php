@@ -69,6 +69,7 @@ class OrderCustomerController extends Controller
                 'order_type'    => $request->order_type,
                 'order_message' => $request->notes,
                 'order_metode'  => 'MIDTRANS',
+                'order_channel' => null, // akan diisi setelah payment
                 'order_status'  => 'pending',
                 'created_at'    => now()
             ]);
@@ -85,6 +86,7 @@ class OrderCustomerController extends Controller
                 'transaksi_change'  => 0,
                 'transaksi_message' => $request->notes,
                 'transaksi_status'  => 'pending',
+                'transaksi_channel' => null, // akan diisi setelah payment
                 'transaksi_code'    => $kodeTransaksi,
                 'created_at'        => now()
             ]);
@@ -99,8 +101,6 @@ class OrderCustomerController extends Controller
                     'trans_code'     => $kodeTransaksi
                 ]);
             }
-
-            // JANGAN UPDATE MEJA DULU, tunggu pembayaran berhasil
 
             DB::commit();
 
@@ -200,6 +200,7 @@ class OrderCustomerController extends Controller
             $transactionStatus = $notif->transaction_status;
             $orderId = $notif->order_id;
             $fraudStatus = $notif->fraud_status ?? null;
+            $paymentType = $notif->payment_type ?? null;
 
             // Ambil payment channel dari notification
             $paymentChannel = $this->getPaymentChannel($notif);
@@ -207,21 +208,23 @@ class OrderCustomerController extends Controller
             Log::info('Midtrans Callback', [
                 'order_id' => $orderId,
                 'transaction_status' => $transactionStatus,
-                'transaksi_channel' => $paymentChannel,
+                'payment_type' => $paymentType,
+                'payment_channel' => $paymentChannel,
                 'fraud_status' => $fraudStatus,
             ]);
 
             $transaksi = Transaksi::where('transaksi_code', $orderId)->firstOrFail();
             $order = Order::where('order_id', $transaksi->transaksi_orderid)->firstOrFail();
 
-            // Update payment channel & type
-            $transaksi->transaksi_channel = $paymentChannel;
-
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
 
                 // ✅ PAYMENT SUCCESS
                 if ($fraudStatus == 'accept' || $fraudStatus === null) {
-                    $order->update(['order_status' => 'paid']);
+                    $order->update([
+                        'order_status' => 'paid',
+                        'order_channel' => $paymentChannel,
+                    ]);
+
                     $transaksi->update([
                         'transaksi_status' => 'success',
                         'transaksi_channel' => $paymentChannel,
@@ -233,21 +236,35 @@ class OrderCustomerController extends Controller
                             ->update(['meja_status' => 'terisi']);
                     }
 
-                    Log::info('Payment SUCCESS', ['order_id' => $orderId]);
+                    Log::info('Payment SUCCESS', [
+                        'order_id' => $orderId,
+                        'channel' => $paymentChannel
+                    ]);
                 }
             } elseif ($transactionStatus === 'pending') {
 
                 // ⏳ PAYMENT PENDING
+                $order->update([
+                    'order_channel' => $paymentChannel,
+                ]);
+
                 $transaksi->update([
                     'transaksi_status' => 'pending',
                     'transaksi_channel' => $paymentChannel,
                 ]);
 
-                Log::info('Payment PENDING', ['order_id' => $orderId]);
+                Log::info('Payment PENDING', [
+                    'order_id' => $orderId,
+                    'channel' => $paymentChannel
+                ]);
             } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
 
                 // ❌ PAYMENT FAILED
-                $order->update(['order_status' => 'payment_failed']);
+                $order->update([
+                    'order_status' => 'payment_failed',
+                    'order_channel' => $paymentChannel,
+                ]);
+
                 $transaksi->update([
                     'transaksi_status' => 'failed',
                     'transaksi_channel' => $paymentChannel,
@@ -255,7 +272,8 @@ class OrderCustomerController extends Controller
 
                 Log::info('Payment FAILED', [
                     'order_id' => $orderId,
-                    'status' => $transactionStatus
+                    'status' => $transactionStatus,
+                    'channel' => $paymentChannel
                 ]);
             }
 
@@ -270,6 +288,59 @@ class OrderCustomerController extends Controller
             ]);
             return response()->json(['success' => false], 500);
         }
+    }
+
+    public function paymentFinish(Request $request)
+    {
+        return redirect('/pesanan')
+            ->with('success', 'Pembayaran berhasil, pesanan sedang diproses');
+    }
+    /**
+     * Get Payment Channel dari Midtrans Notification
+     */
+    private function getPaymentChannel($notif)
+    {
+        $paymentType = $notif->payment_type ?? 'unknown';
+
+        // Map payment type ke channel yang lebih readable
+        $channelMap = [
+            'credit_card' => 'Credit Card',
+            'bank_transfer' => $this->getBankName($notif),
+            'echannel' => 'Mandiri Bill',
+            'gopay' => 'GoPay',
+            'qris' => 'QRIS',
+            'shopeepay' => 'ShopeePay',
+            'cstore' => $this->getConvenienceStoreName($notif),
+            'akulaku' => 'Akulaku',
+        ];
+
+        return $channelMap[$paymentType] ?? ucfirst(str_replace('_', ' ', $paymentType));
+    }
+
+    /**
+     * Get Bank Name untuk bank transfer
+     */
+    private function getBankName($notif)
+    {
+        if (isset($notif->va_numbers) && !empty($notif->va_numbers)) {
+            $bank = $notif->va_numbers[0]->bank ?? 'Unknown Bank';
+            return strtoupper($bank) . ' Virtual Account';
+        }
+
+        if (isset($notif->permata_va_number)) {
+            return 'Permata Virtual Account';
+        }
+
+        return 'Bank Transfer';
+    }
+
+    /**
+     * Get Convenience Store Name
+     */
+    private function getConvenienceStoreName($notif)
+    {
+        $store = $notif->store ?? 'Unknown';
+        return strtoupper($store);
     }
 
     /**
@@ -287,6 +358,7 @@ class OrderCustomerController extends Controller
                     'order_number'   => 'ORD-' . str_pad($order->order_id, 5, '0', STR_PAD_LEFT),
                     'order_status'   => $order->order_status,
                     'payment_status' => $order->transaksi->transaksi_status ?? 'pending',
+                    'payment_channel' => $order->order_channel ?? '-',
                     'table'          => $order->meja->meja_nama ?? '-',
                     'total'          => $order->order_total,
                 ]
@@ -324,11 +396,13 @@ class OrderCustomerController extends Controller
                         'total'         => $order->order_total,
                         'status'        => $order->order_status,
                         'payment_method' => $order->order_metode,
+                        'payment_channel' => $order->order_channel ?? '-',
                         'created_at'    => $order->created_at,
                     ],
                     'transaction' => [
                         'code'   => $transaksi->transaksi_code,
                         'status' => $transaksi->transaksi_status,
+                        'channel' => $transaksi->transaksi_channel ?? '-',
                         'items'  => $transaksi->details->map(function ($detail) {
                             return [
                                 'name'     => $detail->trans_name,
@@ -368,9 +442,6 @@ class OrderCustomerController extends Controller
             if ($transaksi) {
                 $transaksi->update(['transaksi_status' => 'cancelled']);
             }
-
-            // Meja tetap kosong karena belum pernah di-set terisi
-            // (hanya di-set terisi setelah pembayaran berhasil)
 
             DB::commit();
 
