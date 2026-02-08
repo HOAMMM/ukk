@@ -105,6 +105,15 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/dashboard/meja/{id}', [MejaController::class, 'destroy']);
         Route::patch('/dashboard/meja/{id}/toggle', [MejaController::class, 'toggle']);
 
+        Route::get('/dashboard/pesanan', [OrderController::class, 'indexWaiter'])
+            ->name('dashboard.pesanan');
+        Route::get('/dashboard/pesanan/{id}', [OrderController::class, 'detailpesanan'])
+            ->name('dashboard.detail.pesanan');
+        Route::delete('/dashboard/pesanan/{id}/hapus', [OrderController::class, 'hapuspesanan'])
+            ->name('dashboard.hapus');
+
+
+
         // ✨ ROUTE BARU: Reset semua meja
         Route::post('/dashboard/meja/reset-all', [MejaController::class, 'resetAll']);
     });

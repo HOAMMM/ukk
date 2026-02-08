@@ -16,43 +16,32 @@ use Illuminate\Support\Facades\Log;
 class OrderCustomerController extends Controller
 {
     /**
-     * ========================================
      * CREATE ORDER (Customer Order dari Web)
-     * ========================================
      */
     public function store(Request $request)
     {
         $request->validate([
-            'customer_name'  => 'required|string|max:100',
-            'order_type'     => 'required|in:dine_in,takeaway',
-
-            'table_number' => $request->order_type === 'dine_in'
-                ? 'required|numeric'
-                : 'nullable',
-
-            'items'            => 'required|array|min:1',
-            'items.*.menu_id'  => 'required|numeric',
-            'items.*.menu_name' => 'required|string',
+            'customer_name'      => 'required|string|max:100',
+            'order_type'         => 'required|in:dine_in,takeaway',
+            'table_number'       => $request->order_type === 'dine_in' ? 'required|numeric' : 'nullable',
+            'items'              => 'required|array|min:1',
+            'items.*.menu_id'    => 'required|numeric',
+            'items.*.menu_name'  => 'required|string',
             'items.*.menu_price' => 'required|numeric',
-            'items.*.qty'      => 'required|numeric|min:1',
-            'subtotal'         => 'required|numeric|min:1',
-            'tax'              => 'required|numeric|min:0',
-            'total'            => 'required|numeric|min:1',
-            'payment_method'   => 'required|in:cash,qris,debit,ewallet',
-            'notes'            => 'nullable|string|max:500',
+            'items.*.qty'        => 'required|numeric|min:1',
+            'subtotal'           => 'required|numeric|min:1',
+            'tax'                => 'required|numeric|min:0',
+            'total'              => 'required|numeric|min:1',
+            'notes'              => 'nullable|string|max:500',
         ]);
-
 
         DB::beginTransaction();
 
         try {
-            // ===============================
             // VALIDASI MEJA
-            // ===============================
             $meja = null;
 
             if ($request->order_type === 'dine_in') {
-
                 $meja = Meja::where('meja_id', $request->table_number)->first();
 
                 if (!$meja) {
@@ -70,10 +59,7 @@ class OrderCustomerController extends Controller
                 }
             }
 
-
-            // ===============================
-            // SIMPAN ORDER
-            // ===============================
+            // SIMPAN ORDER (status pending sampai pembayaran berhasil)
             $order = Order::create([
                 'order_csname'  => $request->customer_name,
                 'order_meja'    => $meja ? $meja->meja_id : null,
@@ -82,35 +68,28 @@ class OrderCustomerController extends Controller
                 'order_change'  => 0,
                 'order_type'    => $request->order_type,
                 'order_message' => $request->notes,
-                'order_metode' => strtoupper($request->payment_method),
+                'order_metode'  => 'MIDTRANS',
                 'order_status'  => 'pending',
                 'created_at'    => now()
             ]);
 
-
-            // ===============================
             // GENERATE KODE TRANSAKSI
-            // ===============================
             $kodeTransaksi = 'TRX-' . now()->format('Ymd') . '-' . str_pad($order->order_id, 4, '0', STR_PAD_LEFT);
 
-            // ===============================
             // SIMPAN TRANSAKSI
-            // ===============================
             $transaksi = Transaksi::create([
                 'transaksi_orderid' => $order->order_id,
                 'transaksi_csname'  => $request->customer_name,
                 'transaksi_total'   => $request->total,
-                'transaksi_amount'  => 0, // akan diisi saat payment
-                'transaksi_change'  => 0, // akan diisi saat payment
+                'transaksi_amount'  => 0,
+                'transaksi_change'  => 0,
                 'transaksi_message' => $request->notes,
-                'transaksi_status'  => 'pending', // pending → success → failed
+                'transaksi_status'  => 'pending',
                 'transaksi_code'    => $kodeTransaksi,
                 'created_at'        => now()
             ]);
 
-            // ===============================
             // DETAIL TRANSAKSI
-            // ===============================
             foreach ($request->items as $item) {
                 TransaksiDetail::create([
                     'trans_name'     => $item['menu_name'],
@@ -121,38 +100,23 @@ class OrderCustomerController extends Controller
                 ]);
             }
 
-            // ===============================
-            // UPDATE STATUS MEJA
-            // ===============================
-            if ($meja) {
-                $meja->update(['meja_status' => 'terisi']);
-            }
+            // JANGAN UPDATE MEJA DULU, tunggu pembayaran berhasil
 
             DB::commit();
 
-            // ===============================
-            // RESPONSE DENGAN DATA PAYMENT
-            // ===============================
-            $response = [
+            // GENERATE SNAP TOKEN
+            $snapToken = $this->generateSnapToken($order, $transaksi);
+
+            return response()->json([
                 'success'        => true,
                 'message'        => 'Pesanan berhasil dibuat',
                 'order_number'   => 'ORD-' . str_pad($order->order_id, 5, '0', STR_PAD_LEFT),
                 'order_id'       => $order->order_id,
                 'transaksi_code' => $kodeTransaksi,
-                'payment_method' => $request->payment_method,
+                'snap_token'     => $snapToken,
+                'client_key'     => config('midtrans.client_key'),
                 'total'          => $request->total,
-            ];
-
-            // Jika bukan cash, generate payment data
-            if ($request->payment_method !== 'cash') {
-                $response['payment_data'] = $this->generatePaymentData(
-                    $request->payment_method,
-                    $order,
-                    $transaksi
-                );
-            }
-
-            return response()->json($response);
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -169,12 +133,9 @@ class OrderCustomerController extends Controller
     }
 
     /**
-     * ========================================
-     * GENERATE PAYMENT DATA
-     * ========================================
+     * GENERATE SNAP TOKEN
      */
-
-    private function generatePaymentData($method, $order, $transaksi)
+    private function generateSnapToken($order, $transaksi)
     {
         $details = TransaksiDetail::where('trans_code', $transaksi->transaksi_code)->get();
 
@@ -190,10 +151,10 @@ class OrderCustomerController extends Controller
             $qty   = (int) $item->trans_qty;
 
             $item_details[] = [
-                'id'       => (string) $item->id, // ✅ STRING
-                'price'    => $price,              // ✅ INTEGER
-                'quantity' => $qty,                // ✅ INTEGER
-                'name'     => substr($item->trans_name, 0, 50), // ✅ MAX 50 CHAR
+                'id'       => (string) $item->id,
+                'price'    => $price,
+                'quantity' => $qty,
+                'name'     => substr($item->trans_name, 0, 50),
             ];
 
             $grossAmount += ($price * $qty);
@@ -206,7 +167,7 @@ class OrderCustomerController extends Controller
         $params = [
             'transaction_details' => [
                 'order_id'     => $transaksi->transaksi_code,
-                'gross_amount' => $grossAmount, // ✅ HARUS SAMA DENGAN ITEM
+                'gross_amount' => $grossAmount,
             ],
             'customer_details' => [
                 'first_name' => $order->order_csname,
@@ -215,11 +176,8 @@ class OrderCustomerController extends Controller
         ];
 
         try {
-            return [
-                'type'       => 'midtrans',
-                'snap_token' => Snap::getSnapToken($params),
-                'client_key' => config('midtrans.client_key'),
-            ];
+            $snapToken = Snap::getSnapToken($params);
+            return $snapToken;
         } catch (\Exception $e) {
             Log::error('MIDTRANS SNAP ERROR', [
                 'message' => $e->getMessage(),
@@ -229,65 +187,93 @@ class OrderCustomerController extends Controller
         }
     }
 
-
-
     /**
-     * ========================================
-     * GENERATE QRIS
-     * ========================================
+     * PAYMENT CALLBACK (dari Midtrans)
      */
-    private function generateQRIS($order, $transaksi)
+    public function paymentCallback(Request $request)
     {
-        // TODO: Integrate dengan payment gateway (contoh: Midtrans, Xendit, dll)
-        // Untuk demo, return dummy data
+        try {
+            $notif = new Notification();
 
-        return [
-            'type'       => 'qris',
-            'qr_string'  => '00020101021226660014ID.LINKAJA.WWW011893600915133772745502041234530336054041000.005802ID5914Warung Nusantara6011Jakarta Timur61051234062150811INVOICE123630418B0',
-            'qr_url'     => 'https://api.sandbox.midtrans.com/qr/generate/' . $transaksi->transaksi_code,
-            'expired_at' => now()->addMinutes(15)->toIso8601String(),
-        ];
+            DB::beginTransaction();
+
+            $transactionStatus = $notif->transaction_status;
+            $orderId = $notif->order_id;
+            $fraudStatus = $notif->fraud_status ?? null;
+
+            // Ambil payment channel dari notification
+            $paymentChannel = $this->getPaymentChannel($notif);
+
+            Log::info('Midtrans Callback', [
+                'order_id' => $orderId,
+                'transaction_status' => $transactionStatus,
+                'transaksi_channel' => $paymentChannel,
+                'fraud_status' => $fraudStatus,
+            ]);
+
+            $transaksi = Transaksi::where('transaksi_code', $orderId)->firstOrFail();
+            $order = Order::where('order_id', $transaksi->transaksi_orderid)->firstOrFail();
+
+            // Update payment channel & type
+            $transaksi->transaksi_channel = $paymentChannel;
+
+            if (in_array($transactionStatus, ['capture', 'settlement'])) {
+
+                // ✅ PAYMENT SUCCESS
+                if ($fraudStatus == 'accept' || $fraudStatus === null) {
+                    $order->update(['order_status' => 'paid']);
+                    $transaksi->update([
+                        'transaksi_status' => 'success',
+                        'transaksi_channel' => $paymentChannel,
+                    ]);
+
+                    // ✅ UPDATE MEJA JADI TERISI (hanya untuk dine_in)
+                    if ($order->order_type === 'dine_in' && $order->order_meja) {
+                        Meja::where('meja_id', $order->order_meja)
+                            ->update(['meja_status' => 'terisi']);
+                    }
+
+                    Log::info('Payment SUCCESS', ['order_id' => $orderId]);
+                }
+            } elseif ($transactionStatus === 'pending') {
+
+                // ⏳ PAYMENT PENDING
+                $transaksi->update([
+                    'transaksi_status' => 'pending',
+                    'transaksi_channel' => $paymentChannel,
+                ]);
+
+                Log::info('Payment PENDING', ['order_id' => $orderId]);
+            } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
+
+                // ❌ PAYMENT FAILED
+                $order->update(['order_status' => 'payment_failed']);
+                $transaksi->update([
+                    'transaksi_status' => 'failed',
+                    'transaksi_channel' => $paymentChannel,
+                ]);
+
+                Log::info('Payment FAILED', [
+                    'order_id' => $orderId,
+                    'status' => $transactionStatus
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Payment Callback Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['success' => false], 500);
+        }
     }
 
     /**
-     * ========================================
-     * GENERATE DEBIT PAYMENT
-     * ========================================
-     */
-    private function generateDebitPayment($order, $transaksi)
-    {
-        // TODO: Integrate dengan payment gateway
-
-        return [
-            'type'         => 'debit',
-            'redirect_url' => url('/payment/debit/' . $transaksi->transaksi_code),
-            'expired_at'   => now()->addMinutes(30)->toIso8601String(),
-        ];
-    }
-
-    /**
-     * ========================================
-     * GENERATE E-WALLET PAYMENT
-     * ========================================
-     */
-    private function generateEwalletPayment($order, $transaksi)
-    {
-        // TODO: Integrate dengan payment gateway (GoPay, OVO, Dana, dll)
-
-        return [
-            'type'         => 'ewallet',
-            'actions'      => [
-                'deeplink_redirect' => 'gojek://gopay/payment?amount=' . $order->order_total,
-                'mobile_web_url'    => url('/payment/ewallet/' . $transaksi->transaksi_code),
-            ],
-            'expired_at'   => now()->addMinutes(15)->toIso8601String(),
-        ];
-    }
-
-    /**
-     * ========================================
      * CHECK ORDER STATUS
-     * ========================================
      */
     public function checkStatus($orderId)
     {
@@ -314,48 +300,7 @@ class OrderCustomerController extends Controller
     }
 
     /**
-     * ========================================
-     * PAYMENT CALLBACK (dari Payment Gateway)
-     * ========================================
-     */
-
-    public function paymentCallback(Request $request)
-    {
-        $notif = new Notification();
-
-        DB::beginTransaction();
-        try {
-            $transactionStatus = $notif->transaction_status;
-            $orderId = $notif->order_id;
-
-            $transaksi = Transaksi::where('transaksi_code', $orderId)->firstOrFail();
-            $order = Order::where('order_id', $transaksi->transaksi_orderid)->firstOrFail();
-
-            if (in_array($transactionStatus, ['capture', 'settlement'])) {
-                $order->update(['order_status' => 'paid']);
-                $transaksi->update(['transaksi_status' => 'success']);
-            } elseif ($transactionStatus === 'pending') {
-                $transaksi->update(['transaksi_status' => 'pending']);
-            } else {
-                $order->update(['order_status' => 'payment_failed']);
-                $transaksi->update(['transaksi_status' => 'failed']);
-            }
-
-            DB::commit();
-
-            return response()->json(['success' => true]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error($e);
-            return response()->json(['success' => false], 500);
-        }
-    }
-
-
-    /**
-     * ========================================
      * GET ORDER DETAILS
-     * ========================================
      */
     public function show($orderId)
     {
@@ -404,9 +349,7 @@ class OrderCustomerController extends Controller
     }
 
     /**
-     * ========================================
      * CANCEL ORDER (Customer)
-     * ========================================
      */
     public function cancel($orderId)
     {
@@ -426,11 +369,8 @@ class OrderCustomerController extends Controller
                 $transaksi->update(['transaksi_status' => 'cancelled']);
             }
 
-            // Release meja
-            $meja = Meja::where('meja_id', $order->order_meja)->first();
-            if ($meja) {
-                $meja->update(['meja_status' => 'kosong']);
-            }
+            // Meja tetap kosong karena belum pernah di-set terisi
+            // (hanya di-set terisi setelah pembayaran berhasil)
 
             DB::commit();
 

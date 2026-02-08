@@ -142,7 +142,7 @@
                                 @forelse($orderan_terbaru as $order)
                                 <tr>
                                     <td>{{ $order->order_csname }}</td>
-                                    <td>{{ $order->order_meja ?? 'T/A' }}</td>
+                                    <td>{{ $order->meja_nama ?? 'T/A' }}</td>
                                     <td>Rp {{ number_format($order->order_total, 0, ',', '.') }}</td>
                                     <td>{{ date('d/m/Y', strtotime($order->created_at)) }}</td>
                                 </tr>

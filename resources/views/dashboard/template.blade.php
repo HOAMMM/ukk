@@ -647,6 +647,10 @@
                 <i class="fas fa-hamburger"></i>
                 <span>Menu</span>
             </a>
+            <a href="/dashboard/pesanan" class="nav-link {{ request()->is('dashboard/pesanan*') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Pesanan</span>
+            </a>
             <a href="/dashboard/kategori" class="nav-link {{ request()->is('dashboard/kategori-produk*') ? 'active' : '' }}">
                 <i class="fas fa-tags"></i>
                 <span>Kategori</span>
@@ -665,6 +669,10 @@
             <a href="/dashboard/meja" class="nav-link {{ request()->is('dashboard/meja*') ? 'active' : '' }}">
                 <i class="fas fa-table"></i>
                 <span>Meja</span>
+            </a>
+            <a href="/dashboard/pesanan" class="nav-link {{ request()->is('dashboard/pesanan*') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Pesanan</span>
             </a>
 
             <div class="sidebar-section-header">Laporan</div>

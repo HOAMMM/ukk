@@ -24,6 +24,7 @@ class Order extends Model
         'order_message',
         'order_type',
         'order_change',
+        'order_channel',
         'order_status',
         'created_at'
     ];

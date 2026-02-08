@@ -46,24 +46,32 @@ class LaporanExport implements
      */
     public function collection()
     {
-        $query = Order::query();
+        $query = Order::query()
+            ->leftJoin('tb_meja', 'tb_meja.meja_id', '=', 'tb_order.order_meja')
+            ->select(
+                'tb_order.*',
+                'tb_meja.meja_nama'
+            );
 
         if ($this->tanggalMulai && $this->tanggalSelesai) {
-            $query->whereBetween('created_at', [
+            $query->whereBetween('tb_order.created_at', [
                 $this->tanggalMulai . ' 00:00:00',
                 $this->tanggalSelesai . ' 23:59:59',
             ]);
         }
 
-        return $query->orderBy('created_at', 'asc')
+        return $query
+            ->orderBy('tb_order.created_at', 'desc')
             ->get()
-            ->map(function (Order $order) {
+            ->map(function ($order) {
                 return [
                     $order->order_csname,
-                    $order->order_meja ?? '-',
+                    $order->meja_nama ?? 'T/A', // TAKEAWAY / NULL
                     $order->order_total,
-                    strtoupper($order->order_status), // ENUM langsung dari DB
-                    Date::dateTimeToExcel(Carbon::parse($order->created_at)),
+                    strtoupper($order->order_status),
+                    Date::dateTimeToExcel(
+                        Carbon::parse($order->created_at)
+                    ),
                 ];
             });
     }

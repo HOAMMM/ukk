@@ -42,7 +42,12 @@ class LaporanController extends Controller
         // TABLE TRANSAKSI
         // ===============================
         $orderan_terbaru = (clone $baseQuery)
-            ->orderBy('created_at', 'desc')
+            ->leftJoin('tb_meja', 'tb_meja.meja_id', '=', 'tb_order.order_meja')
+            ->select(
+                'tb_order.*',
+                'tb_meja.meja_nama'
+            )
+            ->orderBy('tb_order.created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 

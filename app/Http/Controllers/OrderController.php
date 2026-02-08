@@ -33,6 +33,24 @@ class OrderController extends Controller
         return view('dashboard.order', compact('menus', 'kategori'));
     }
 
+    public function indexwaiter()
+    {
+        $kategori = Kategori::orderBy('kategori_name')->get();
+        $mejas = Meja::orderBy('meja_id')->get();
+        $orders = Order::all();
+
+        $menus = Menu::orderBy('menu_kategori')
+            ->orderBy('menu_name')
+            ->get();
+
+        return view('dashboard.pesanan', compact('kategori', 'mejas', 'menus', 'orders'));
+    }
+    public function detailpesanan($order_id)
+    {
+        $order = Order::with('detail.pesanan')->findOrFail($order_id);
+        return view('dashboard.detail.pesanan', compact('order'));
+    }
+
     public function checkout(Request $request)
     {
         $request->validate([

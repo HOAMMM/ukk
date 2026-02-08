@@ -21,6 +21,7 @@ class Transaksi extends Model
         'transaksi_change',
         'transaksi_total',
         'transaksi_status',
+        'transaksi_channel',
         'transaksi_code',
         'created_at'
     ];
