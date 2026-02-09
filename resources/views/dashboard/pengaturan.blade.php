@@ -17,15 +17,12 @@
                     <a href="#profile" class="list-group-item list-group-item-action active" data-bs-toggle="list">
                         <i class="bi bi-person me-2"></i>Profil Saya
                     </a>
-                    <a href="#account" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                    <a href="#security" class="list-group-item list-group-item-action" data-bs-toggle="list">
                         <i class="bi bi-shield-lock me-2"></i>Keamanan Akun
                     </a>
-                    <a href="#notification" class="list-group-item list-group-item-action" data-bs-toggle="list">
-                        <i class="bi bi-bell me-2"></i>Notifikasi
-                    </a>
-                    <a href="#preferences" class="list-group-item list-group-item-action" data-bs-toggle="list">
-                        <i class="bi bi-sliders me-2"></i>Preferensi
-                    </a>
+                    <!-- <a href="#preferences" class="list-group-item list-group-item-action" data-bs-toggle="list">
+                        <i class="bi bi-moon-stars me-2"></i>Tema Tampilan
+                    </a> -->
                 </div>
             </div>
         </div>
@@ -40,215 +37,242 @@
                             <h5 class="mb-0">Informasi Profil</h5>
                         </div>
                         <div class="card-body">
-                            <!-- Profile Photo -->
-                            <div class="mb-4 text-center">
-                                <div class="position-relative d-inline-block">
-                                    <img src="https://ui-avatars.com/api/?name=User&size=120"
-                                        alt="Avatar"
-                                        class="rounded-circle mb-3"
-                                        width="120"
-                                        height="120"
-                                        id="avatar-preview">
-                                    <label for="avatar" class="position-absolute bottom-0 end-0 btn btn-sm btn-primary rounded-circle" style="width: 35px; height: 35px;">
-                                        <i class="bi bi-camera"></i>
-                                    </label>
-                                    <input type="file" id="avatar" name="avatar" class="d-none" accept="image/*">
-                                </div>
-                            </div>
+                            <form action="{{ route('pengaturan.update.profile') }}" method="POST" enctype="multipart/form-data">
+                                @csrf
+                                @method('PUT')
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
-                                    <input type="text" name="name" class="form-control" placeholder="Masukkan nama lengkap" required>
+                                <!-- Profile Photo -->
+                                <div class="mb-4 text-center">
+                                    <div class="position-relative d-inline-block">
+                                        @if($user->avatar)
+                                        <img src="{{ asset('storage/avatars/' . $user->avatar) }}"
+                                            alt="Avatar"
+                                            class="rounded-circle mb-3"
+                                            width="120"
+                                            height="120"
+                                            id="avatar-preview"
+                                            style="object-fit: cover;">
+                                        @else
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($user->namleng ?? $user->username) }}&size=120&background=667eea&color=fff"
+                                            alt="Avatar"
+                                            class="rounded-circle mb-3"
+                                            width="120"
+                                            height="120"
+                                            id="avatar-preview">
+                                        @endif
+                                        <label for="avatar" class="position-absolute bottom-0 end-0 btn btn-sm btn-primary rounded-circle" style="width: 35px; height: 35px;">
+                                            <i class="bi bi-camera"></i>
+                                        </label>
+                                        <input type="file" id="avatar" name="avatar" class="d-none" accept="image/*">
+                                    </div>
+                                    @error('avatar')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                    @enderror
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input type="email" name="email" class="form-control" placeholder="email@example.com" required>
-                                </div>
-                            </div>
 
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Nomor Telepon</label>
-                                    <input type="text" name="phone" class="form-control" placeholder="08xxxxxxxxxx">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
+                                        <input type="text" name="namleng" class="form-control @error('namleng') is-invalid @enderror"
+                                            placeholder="Masukkan nama lengkap"
+                                            value="{{ old('namleng', $user->namleng) }}"
+                                            required>
+                                        @error('namleng')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Email <span class="text-danger">*</span></label>
+                                        <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
+                                            placeholder="email@example.com"
+                                            value="{{ old('email', $user->email) }}"
+                                            required>
+                                        @error('email')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">Tanggal Lahir</label>
-                                    <input type="date" name="birth_date" class="form-control">
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Username</label>
+                                        <input type="text" class="form-control"
+                                            value="{{ $user->username }}"
+                                            disabled>
+                                        <small class="text-muted">Username tidak dapat diubah</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Nomor Telepon</label>
+                                        <input type="text" name="user_phone" class="form-control @error('user_phone') is-invalid @enderror"
+                                            placeholder="08xxxxxxxxxx"
+                                            value="{{ old('user_phone', $user->user_phone) }}">
+                                        @error('user_phone')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Alamat</label>
-                                <textarea name="address" class="form-control" rows="3" placeholder="Masukkan alamat lengkap"></textarea>
-                            </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Kode User</label>
+                                        <input type="text" class="form-control"
+                                            value="{{ $user->user_code }}"
+                                            disabled>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Level</label>
+                                        <input type="text" class="form-control"
+                                            value="@if($user->id_level == 1) Administrator @elseif($user->id_level == 2) Waiter @elseif($user->id_level == 3) Kasir @else Owner @endif"
+                                            disabled>
+                                    </div>
+                                </div>
 
-                            <div class="text-end">
-                                <button type="button" class="btn btn-primary">
-                                    <i class="bi bi-save me-2"></i>Simpan Perubahan
-                                </button>
-                            </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Terdaftar Sejak</label>
+                                    <input type="text" class="form-control"
+                                        value="{{ $user->created_at ? $user->created_at->format('d F Y H:i') : '-' }}"
+                                        disabled>
+                                </div>
+
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>Simpan Perubahan
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
 
-                <!-- Account Security -->
-                <div class="tab-pane fade" id="account">
+                <!-- Security Settings -->
+                <div class="tab-pane fade" id="security">
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-white py-3">
                             <h5 class="mb-0">Ubah Password</h5>
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label">Password Lama <span class="text-danger">*</span></label>
-                                <input type="password" name="current_password" class="form-control" placeholder="Masukkan password lama" required>
-                            </div>
+                            <form action="{{ route('pengaturan.update.password') }}" method="POST">
+                                @csrf
+                                @method('PUT')
 
-                            <div class="mb-3">
-                                <label class="form-label">Password Baru <span class="text-danger">*</span></label>
-                                <input type="password" name="password" class="form-control" placeholder="Masukkan password baru" required>
-                                <small class="text-muted">Minimal 8 karakter</small>
-                            </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Password Lama <span class="text-danger">*</span></label>
+                                    <input type="password" name="current_password" class="form-control @error('current_password') is-invalid @enderror"
+                                        placeholder="Masukkan password lama" required>
+                                    @error('current_password')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">Konfirmasi Password Baru <span class="text-danger">*</span></label>
-                                <input type="password" name="password_confirmation" class="form-control" placeholder="Ulangi password baru" required>
-                            </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Password Baru <span class="text-danger">*</span></label>
+                                    <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
+                                        placeholder="Masukkan password baru" required>
+                                    @error('password')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Minimal 6 karakter</small>
+                                </div>
 
-                            <div class="text-end">
-                                <button type="button" class="btn btn-primary">
-                                    <i class="bi bi-shield-check me-2"></i>Update Password
-                                </button>
-                            </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Konfirmasi Password Baru <span class="text-danger">*</span></label>
+                                    <input type="password" name="password_confirmation" class="form-control"
+                                        placeholder="Ulangi password baru" required>
+                                </div>
+
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-shield-check me-2"></i>Update Password
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
 
-                    <!-- Two Factor Authentication -->
+                    <!-- Account Information -->
                     <div class="card shadow-sm">
                         <div class="card-header bg-white py-3">
-                            <h5 class="mb-0">Autentikasi Dua Faktor</h5>
+                            <h5 class="mb-0">Informasi Akun</h5>
                         </div>
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">Aktifkan 2FA</h6>
-                                    <p class="text-muted small mb-0">Tambahkan lapisan keamanan ekstra pada akun Anda</p>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <strong>Kode User:</strong>
+                                    <p class="mb-0">{{ $user->user_code }}</p>
                                 </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="toggle2fa">
+                                <div class="col-md-6 mb-3">
+                                    <strong>Level Akses:</strong>
+                                    <p class="mb-0">
+                                        @if($user->id_level == 1)
+                                        <span class="badge bg-danger">Administrator</span>
+                                        @elseif($user->id_level == 2)
+                                        <span class="badge bg-warning">Waiter</span>
+                                        @elseif($user->id_level == 3)
+                                        <span class="badge bg-success">Kasir</span>
+                                        @else
+                                        <span class="badge bg-secondary">Owner</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <strong>Terdaftar Sejak:</strong>
+                                    <p class="mb-0">{{ $user->created_at ? $user->created_at->format('d F Y H:i') : '-' }}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Notification Settings -->
-                <div class="tab-pane fade" id="notification">
+                <!-- <div class="tab-pane fade" id="preferences">
                     <div class="card shadow-sm">
                         <div class="card-header bg-white py-3">
-                            <h5 class="mb-0">Pengaturan Notifikasi</h5>
+                            <h5 class="mb-0">Pengaturan Tema</h5>
                         </div>
                         <div class="card-body">
-                            <div class="mb-3 d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <h6 class="mb-1">Email Notifikasi</h6>
-                                    <p class="text-muted small mb-0">Terima notifikasi melalui email</p>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="email_notifications" id="emailNotif" checked>
-                                </div>
-                            </div>
+                            <form action="{{ route('pengaturan.update.preferences') }}" method="POST">
+                                @csrf
+                                @method('PUT')
 
-                            <div class="mb-3 d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <h6 class="mb-1">Push Notifikasi</h6>
-                                    <p class="text-muted small mb-0">Terima notifikasi push di browser</p>
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Pilih Tema Tampilan</label>
+                                    <p class="text-muted small">Sesuaikan tampilan dashboard sesuai preferensi Anda</p>
                                 </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="push_notifications" id="pushNotif" checked>
-                                </div>
-                            </div>
 
-                            <div class="mb-3 d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <h6 class="mb-1">Notifikasi SMS</h6>
-                                    <p class="text-muted small mb-0">Terima notifikasi melalui SMS</p>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="sms_notifications" id="smsNotif">
-                                </div>
-                            </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <input type="radio" class="btn-check" name="theme" id="theme-light" value="light"
+                                            {{ ($user->theme ?? 'light') == 'light' ? 'checked' : '' }}>
+                                        <label class="btn btn-outline-primary w-100 p-4 theme-option" for="theme-light">
+                                            <div class="text-center">
+                                                <i class="bi bi-sun fs-1 mb-3 d-block"></i>
+                                                <h5 class="mb-2">Mode Terang</h5>
+                                                <p class="text-muted small mb-0">Tampilan terang untuk penggunaan di siang hari</p>
+                                            </div>
+                                        </label>
+                                    </div>
 
-                            <div class="mb-3 d-flex justify-content-between align-items-center py-2">
-                                <div>
-                                    <h6 class="mb-1">Newsletter</h6>
-                                    <p class="text-muted small mb-0">Terima berita dan update terbaru</p>
+                                    <div class="col-md-6">
+                                        <input type="radio" class="btn-check" name="theme" id="theme-dark" value="dark"
+                                            {{ ($user->theme ?? 'light') == 'dark' ? 'checked' : '' }}>
+                                        <label class="btn btn-outline-primary w-100 p-4 theme-option" for="theme-dark">
+                                            <div class="text-center">
+                                                <i class="bi bi-moon-stars fs-1 mb-3 d-block"></i>
+                                                <h5 class="mb-2">Mode Gelap</h5>
+                                                <p class="text-muted small mb-0">Tampilan gelap untuk mengurangi kelelahan mata</p>
+                                            </div>
+                                        </label>
+                                    </div>
                                 </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="newsletter" id="newsletter" checked>
-                                </div>
-                            </div>
 
-                            <div class="text-end mt-4">
-                                <button type="button" class="btn btn-primary">
-                                    <i class="bi bi-save me-2"></i>Simpan Pengaturan
-                                </button>
-                            </div>
+                                <div class="text-end mt-4">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>Simpan Tema
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                </div>
-
-                <!-- Preferences -->
-                <div class="tab-pane fade" id="preferences">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="mb-0">Preferensi Umum</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-4">
-                                <label class="form-label">Bahasa</label>
-                                <select name="language" class="form-select">
-                                    <option value="id" selected>Bahasa Indonesia</option>
-                                    <option value="en">English</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label">Zona Waktu</label>
-                                <select name="timezone" class="form-select">
-                                    <option value="Asia/Jakarta" selected>WIB - Jakarta</option>
-                                    <option value="Asia/Makassar">WITA - Makassar</option>
-                                    <option value="Asia/Jayapura">WIT - Jayapura</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label">Tema</label>
-                                <select name="theme" class="form-select">
-                                    <option value="light" selected>Terang</option>
-                                    <option value="dark">Gelap</option>
-                                    <option value="auto">Otomatis</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-4 d-flex justify-content-between align-items-center py-2 border-bottom">
-                                <div>
-                                    <h6 class="mb-1">Mode Kompak</h6>
-                                    <p class="text-muted small mb-0">Tampilkan lebih banyak konten di layar</p>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="compact_mode">
-                                </div>
-                            </div>
-
-                            <div class="text-end mt-4">
-                                <button type="button" class="btn btn-primary">
-                                    <i class="bi bi-save me-2"></i>Simpan Preferensi
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
@@ -280,6 +304,27 @@
         border-bottom: 1px solid #e9ecef;
         border-radius: 10px 10px 0 0 !important;
     }
+
+    .theme-option {
+        height: 100%;
+        transition: all 0.3s ease;
+        border: 2px solid #dee2e6;
+    }
+
+    .theme-option:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-check:checked+.theme-option {
+        background-color: #0d6efd;
+        color: white !important;
+        border-color: #0d6efd;
+    }
+
+    .btn-check:checked+.theme-option .text-muted {
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
 </style>
 
 <script>
@@ -292,19 +337,6 @@
                 document.getElementById('avatar-preview').src = e.target.result;
             }
             reader.readAsDataURL(file);
-        }
-    });
-
-    // 2FA Toggle
-    document.getElementById('toggle2fa')?.addEventListener('change', function() {
-        if (this.checked) {
-            alert('Fitur 2FA akan segera diaktifkan');
-        } else {
-            if (confirm('Apakah Anda yakin ingin menonaktifkan 2FA?')) {
-                // Process disable 2FA
-            } else {
-                this.checked = true;
-            }
         }
     });
 </script>

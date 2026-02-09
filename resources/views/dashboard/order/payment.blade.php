@@ -16,7 +16,7 @@
     }
 
     .order-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #9e4400 0%, #fb923c 100%);
         color: white;
         padding: 20px;
         border-radius: 12px;
@@ -75,7 +75,7 @@
     }
 
     .total-amount {
-        color: #667eea;
+        color: #9e4400;
         font-weight: 700;
     }
 
@@ -97,9 +97,54 @@
     }
 
     .form-control:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #fb923c;
+        box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.1);
     }
+
+    /* ===============================
+   FORCE ORANGE ORDER TYPE BUTTON
+   =============================== */
+
+    /* DEFAULT */
+    .order-type-btn.btn-outline-primary,
+    .order-type-btn.btn-outline-success {
+        color: #1f1a16 !important;
+        border-color: #050505 !important;
+        background-color: transparent;
+    }
+
+    /* HOVER */
+    .order-type-btn.btn-outline-primary:hover,
+    .order-type-btn.btn-outline-success:hover {
+        color: #ffffff !important;
+        background-color: #fb923c !important;
+        border-color: #fb923c !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(251, 146, 60, 0.35);
+    }
+
+    /* ACTIVE */
+    .order-type-btn.btn-outline-primary.active,
+    .order-type-btn.btn-outline-success.active {
+        color: #ffffff !important;
+        background-color: #fb923c !important;
+        border-color: #fb923c !important;
+    }
+
+    /* FOCUS */
+    .order-type-btn.btn-outline-primary:focus,
+    .order-type-btn.btn-outline-success:focus {
+        box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.35) !important;
+        border-color: #fb923c !important;
+    }
+
+    /* REMOVE BOOTSTRAP ACTIVE OUTLINE */
+    .order-type-btn.btn-outline-primary:active,
+    .order-type-btn.btn-outline-success:active {
+        background-color: #fb923c !important;
+        border-color: #fb923c !important;
+    }
+
 
     .meja-section {
         background: #f8f9fa;
@@ -124,21 +169,21 @@
 
     .meja-btn.btn-outline-primary {
         background: white;
-        color: #667eea;
-        border-color: #667eea;
+        color: #fb923c;
+        border-color: #fb923c;
     }
 
     .meja-btn.btn-outline-primary:hover:not(.disabled) {
-        background: #667eea;
+        background: #fb923c;
         color: white;
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 4px 8px rgba(251, 146, 60, 0.3);
     }
 
     .meja-btn.btn-outline-primary.active {
-        background: #667eea;
+        background: #fb923c;
         color: white;
-        border-color: #667eea;
+        border-color: #fb923c;
     }
 
     .meja-btn.btn-danger {
@@ -174,7 +219,7 @@
     }
 
     .btn-payment {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #9e4400 0%, #fb923c 100%);
         border: none;
         border-radius: 8px;
         padding: 16px;
@@ -185,7 +230,7 @@
 
     .btn-payment:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 6px 20px rgba(251, 146, 60, 0.4);
     }
 
     .icon-check {
@@ -213,7 +258,7 @@
         <h4>Pembayaran Order</h4>
         <div class="order-info">
             <span><strong>Order ID:</strong> {{ $order->order_id }}</span>
-            <span><strong>Kasir:</strong> {{ $order->order_csname }}</span>
+            <span><strong>Kasir:</strong> {{ auth()->user()->name }}</span>
         </div>
     </div>
 
@@ -260,17 +305,37 @@
 
             {{-- NAMA PELANGGAN --}}
             <div class="mb-3">
-                <label class="form-label">Nama Pelanggan</label>
+                <label class="form-label">Nama Pelanggan <span class="text-danger">*</span></label>
                 <input type="text"
                     name="csname"
+                    id="csname"
                     class="form-control"
                     placeholder="Masukkan nama pelanggan"
+                    required
                     autocomplete="off">
             </div>
 
+            {{-- TIPE ORDER --}}
+            <div class="mb-3">
+                <label class="form-label">Tipe Order <span class="text-danger">*</span></label>
+                <div class="d-flex gap-2">
+                    <button type="button"
+                        class="btn btn-outline-primary flex-fill order-type-btn active"
+                        data-type="dine_in">
+                        Dine In
+                    </button>
+                    <button type="button"
+                        class="btn btn-outline-success flex-fill order-type-btn"
+                        data-type="takeaway">
+                        Takeaway
+                    </button>
+                </div>
+                <input type="hidden" name="order_type" id="order_type" value="dine_in">
+            </div>
+
             {{-- PILIH MEJA --}}
-            <div class="meja-section">
-                <strong>Pilih Meja</strong>
+            <div class="meja-section" id="mejaSection">
+                <strong>Pilih Meja <span class="text-danger">*</span></strong>
 
                 <div class="row g-2">
                     @foreach ($mejas as $meja)
@@ -296,13 +361,14 @@
 
             {{-- UANG BAYAR --}}
             <div class="mb-3">
-                <label class="form-label">Uang Bayar</label>
+                <label class="form-label">Uang Bayar <span class="text-danger">*</span></label>
                 <input type="number"
                     name="bayar"
                     id="bayar"
                     class="form-control"
                     placeholder="Masukkan jumlah uang bayar"
                     min="1"
+                    required
                     autocomplete="off">
             </div>
 
@@ -319,12 +385,39 @@
     </div>
 </div>
 
-{{--
-    GANTI BAGIAN SCRIPT SUBMIT PEMBAYARAN DI FILE payment.blade.php
-    Cari bagian fetch yang memproses pembayaran, lalu ganti dengan ini:
---}}
-
 <script>
+    // ===============================
+    // TIPE ORDER
+    // ===============================
+    const orderTypeButtons = document.querySelectorAll('.order-type-btn');
+    const orderTypeInput = document.getElementById('order_type');
+    const mejaSection = document.getElementById('mejaSection');
+    const selectedMejaInput = document.getElementById('selected_meja');
+
+    orderTypeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active from all buttons
+            orderTypeButtons.forEach(b => b.classList.remove('active'));
+
+            // Add active to clicked button
+            this.classList.add('active');
+
+            // Set hidden input value
+            const orderType = this.dataset.type;
+            orderTypeInput.value = orderType;
+
+            // Show/hide meja section based on order type
+            if (orderType === 'takeaway') {
+                mejaSection.style.display = 'none';
+                selectedMejaInput.value = ''; // Clear meja selection
+                // Remove active from all meja buttons
+                document.querySelectorAll('.meja-btn').forEach(b => b.classList.remove('active'));
+            } else {
+                mejaSection.style.display = 'block';
+            }
+        });
+    });
+
     // ===============================
     // PILIH MEJA
     // ===============================
@@ -334,7 +427,7 @@
                 .forEach(b => b.classList.remove('active'));
 
             this.classList.add('active');
-            document.getElementById('selected_meja').value = this.dataset.id;
+            selectedMejaInput.value = this.dataset.id;
         });
     });
 
@@ -368,14 +461,23 @@
             e.preventDefault();
 
             const bayar = parseInt(bayarInput.value);
-            const mejaId = document.getElementById('selected_meja').value;
-            const csname = document
-                .querySelector('input[name="csname"]').value;
-            const orderId = document
-                .querySelector('input[name="order_id"]').value;
+            const mejaId = selectedMejaInput.value;
+            const csname = document.getElementById('csname').value.trim();
+            const orderType = orderTypeInput.value;
+            const orderId = document.querySelector('input[name="order_id"]').value;
 
-            // VALIDASI MEJA
-            if (!mejaId) {
+            // VALIDASI NAMA PELANGGAN
+            if (!csname) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Validasi Gagal',
+                    text: 'Nama pelanggan harus diisi'
+                });
+                return;
+            }
+
+            // VALIDASI MEJA (hanya untuk dine_in)
+            if (orderType === 'dine_in' && !mejaId) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Validasi Gagal',
@@ -397,7 +499,14 @@
             // KONFIRMASI
             Swal.fire({
                 title: 'Konfirmasi Pembayaran',
-                text: 'Apakah pembayaran ingin diproses?',
+                html: `
+                    <div class="text-start">
+                        <p><strong>Nama:</strong> ${csname}</p>
+                        <p><strong>Tipe:</strong> ${orderType === 'dine_in' ? 'Dine In' : 'Takeaway'}</p>
+                        <p><strong>Total:</strong> Rp ${total.toLocaleString('id-ID')}</p>
+                        <p><strong>Bayar:</strong> Rp ${bayar.toLocaleString('id-ID')}</p>
+                    </div>
+                `,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Proses',
@@ -420,8 +529,9 @@
                         body: JSON.stringify({
                             order_id: orderId,
                             bayar: bayar,
-                            meja_id: mejaId,
-                            csname: csname
+                            meja_id: mejaId || null,
+                            csname: csname,
+                            order_type: orderType
                         })
                     })
                     .then(res => res.json())

@@ -730,7 +730,10 @@
         <div class="header-top">
             <div class="logo"><i class="fas fa-utensils"></i> Restaurant HQ</div>
             <div class="header-icons">
-                <button class="icon-btn" onclick="toggleFavorites()"><i class="fas fa-heart"></i></button>
+                <button class="icon-btn" id="favorite-filter-btn" onclick="toggleFavorites()">
+                    <i class="fas fa-heart"></i>
+                    <span class="badge" id="favorite-badge">0</span>
+                </button>
                 <button class="icon-btn" onclick="toggleCart()"><i class="fas fa-shopping-cart"></i><span
                         class="badge" id="cart-badge">0</span></button>
             </div>
@@ -776,8 +779,12 @@
                     <img src="{{ asset('uploads/menu/' . $menu->menu_image) }}" class="menu-img"
                         alt="{{ $menu->menu_name }}">
                     <div class="menu-badge">{{ $menu->menu_kategori }}</div>
-                    <button class="favorite-btn" onclick="toggleFavorite(this, {{ $menu->menu_id }})"><i
-                            class="fas fa-heart"></i></button>
+                    <button class="favorite-btn"
+                        data-id="{{ $menu->menu_id }}"
+                        onclick="toggleFavorite(this, {{ $menu->menu_id }})">
+                        <i class="fas fa-heart"></i>
+                    </button>
+
                 </div>
                 <div class="menu-body">
                     <div class="menu-name" data-original="{{ $menu->menu_name }}">
@@ -929,6 +936,93 @@
     <script src="{{ asset('sweetalert/sweetalert2.all.min.js') }}"></script>
     <script>
         /* ===============================
+               FAVORITE NOTIFICATION
+            ================================ */
+        function updateFavoriteBadge() {
+            const badge = document.getElementById('favorite-badge');
+            const total = favorites.length;
+
+            if (total > 0) {
+                badge.textContent = total;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // panggil saat load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateFavoriteBadge();
+        });
+
+        let showOnlyFavorites = false;
+
+        // INIT FAVORITE STATUS
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.favorite-btn').forEach(btn => {
+                const id = Number(btn.dataset.id);
+                if (favorites.includes(id)) {
+                    btn.classList.add('active');
+                }
+            });
+        });
+
+        // TOGGLE FAVORITE PER MENU
+        function toggleFavorite(btn, menuId) {
+            menuId = Number(menuId);
+
+            if (favorites.includes(menuId)) {
+                favorites = favorites.filter(id => id !== menuId);
+                btn.classList.remove('active');
+                showToast('💔 Dihapus dari favorit');
+            } else {
+                favorites.push(menuId);
+                btn.classList.add('active');
+                showToast('❤️ Ditambahkan ke favorit');
+            }
+
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            updateFavoriteBadge();
+
+            // kalau lagi mode favorit → refresh tampilan
+            if (showOnlyFavorites) filterFavoriteOnly();
+        }
+
+        // TOGGLE FAVORITE FILTER (ICON HEADER)
+        function toggleFavorites() {
+            if (favorites.length === 0) {
+                showToast('⚠ Belum ada menu favorit');
+                return;
+            }
+
+            showOnlyFavorites = !showOnlyFavorites;
+
+            const btn = document.getElementById('favorite-filter-btn');
+            btn.classList.toggle('active', showOnlyFavorites);
+
+            filterFavoriteOnly();
+        }
+
+
+        // FILTER MENU FAVORIT
+        function filterFavoriteOnly() {
+            document.querySelectorAll('.menu-card').forEach(card => {
+                const favBtn = card.querySelector('.favorite-btn');
+                const menuId = Number(favBtn.dataset.id);
+
+                if (!showOnlyFavorites) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = favorites.includes(menuId) ?
+                        'block' :
+                        'none';
+                }
+            });
+        }
+    </script>
+
+    <script>
+        /* ===============================
    CATEGORY & SEARCH FILTER
 ================================ */
         document.addEventListener('DOMContentLoaded', () => {
@@ -1002,13 +1096,28 @@
             showToast('✓ Ditambahkan ke keranjang');
         }
 
+        function updateCartBadge() {
+            const badge = document.getElementById('cart-badge');
+            const totalQty = cart.reduce((s, i) => s + i.qty, 0);
+
+            if (totalQty > 0) {
+                badge.textContent = totalQty;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+
         function updateCart() {
             const badge = document.getElementById('cart-badge');
             const body = document.getElementById('cart-body');
             const footer = document.getElementById('cart-footer');
 
             const totalQty = cart.reduce((s, i) => s + i.qty, 0);
-            badge.textContent = totalQty;
+            // badge.textContent = totalQty;
+            updateCartBadge();
+
 
             if (cart.length === 0) {
                 body.innerHTML = `
@@ -1280,6 +1389,18 @@
                             }
                             showToast('❌ Pembayaran gagal. Silakan coba lagi.');
                             document.getElementById('checkout-modal').classList.add('active');
+                            const interval = setInterval(() => {
+                                if (!currentOrderId) return;
+
+                                fetch(`/api/orders/${currentOrderId}/status`)
+                                    .then(res => res.json())
+                                    .then(res => {
+                                        if (res.success && res.data.order_status === 'paid') {
+                                            clearInterval(interval);
+                                            window.location.href = '/';
+                                        }
+                                    });
+                            }, 3000);
                         },
                         onClose: function() {
                             console.log('Payment popup closed');

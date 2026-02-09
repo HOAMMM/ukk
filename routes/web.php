@@ -43,8 +43,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-    // PENGATURAN (accessible by all authenticated users)
-    Route::view('/dashboard/pengaturan', 'dashboard.pengaturan');
+    // PENGATURAN
+    Route::get('/dashboard/pengaturan', [App\Http\Controllers\PengaturanController::class, 'index'])
+        ->name('pengaturan');
+    Route::put('/dashboard/pengaturan/profile', [App\Http\Controllers\PengaturanController::class, 'updateProfile'])
+        ->name('pengaturan.update.profile');
+    Route::put('/dashboard/pengaturan/password', [App\Http\Controllers\PengaturanController::class, 'updatePassword'])
+        ->name('pengaturan.update.password');
+    Route::put('/dashboard/pengaturan/notifications', [App\Http\Controllers\PengaturanController::class, 'updateNotifications'])
+        ->name('pengaturan.update.notifications');
+    Route::put('/dashboard/pengaturan/preferences', [App\Http\Controllers\PengaturanController::class, 'updatePreferences'])
+        ->name('pengaturan.update.preferences');
     Route::get('/dashboard/laporan', [LaporanController::class, 'index'])
         ->name('dashboard.laporan');
     Route::get(
@@ -105,12 +114,20 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/dashboard/meja/{id}', [MejaController::class, 'destroy']);
         Route::patch('/dashboard/meja/{id}/toggle', [MejaController::class, 'toggle']);
 
-        Route::get('/dashboard/pesanan', [OrderController::class, 'indexWaiter'])
-            ->name('dashboard.pesanan');
-        Route::get('/dashboard/pesanan/{id}', [OrderController::class, 'detailpesanan'])
-            ->name('dashboard.detail.pesanan');
-        Route::delete('/dashboard/pesanan/{id}/hapus', [OrderController::class, 'hapuspesanan'])
-            ->name('dashboard.hapus');
+
+        // Route untuk halaman pesanan
+        Route::get('/dashboard/pesanan', [OrderController::class, 'indexwaiter'])->name('dashboard.pesanan');
+
+        // Route untuk detail order (API endpoint untuk modal)
+        Route::get('/dashboard/pesanan/{order_id}/detail', [OrderController::class, 'getOrderDetail']);
+
+        // Route untuk hapus single order
+        Route::delete('/dashboard/pesanan/{id}/hapus', [OrderController::class, 'hapuspesanan']);
+
+        // Route untuk bulk operations
+        Route::post('/dashboard/pesanan/bulk-delete', [OrderController::class, 'bulkDelete']);
+        Route::post('/dashboard/pesanan/mark-paid', [OrderController::class, 'markAsPaid']);
+        Route::post('/dashboard/pesanan/mark-pending', [OrderController::class, 'markAsPending']);
 
 
 

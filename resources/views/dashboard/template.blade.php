@@ -635,7 +635,7 @@
             <div class="sidebar-section-header">Laporan</div>
             <a href="/dashboard/laporan" class="nav-link {{ request()->is('dashboard/laporan*') ? 'active' : '' }}">
                 <i class="fas fa-chart-pie"></i>
-                <span>Laporan</span>
+                <span>Laporan Keuangan</span>
             </a>
             <a href="/dashboard/transaksi" class="nav-link {{ request()->is('dashboard/transaksi*') ? 'active' : '' }}">
                 <i class="fas fa-receipt"></i>
@@ -678,7 +678,7 @@
             <div class="sidebar-section-header">Laporan</div>
             <a href="/dashboard/laporan" class="nav-link {{ request()->is('dashboard/laporan*') ? 'active' : '' }}">
                 <i class="fas fa-chart-pie"></i>
-                <span>Laporan</span>
+                <span>Laporan Keuangan</span>
             </a>
             <div class="sidebar-section-header">Setting</div>
             <a href="/dashboard/pengaturan" class="nav-link {{ request()->is('dashboard/pengaturan*') ? 'active' : '' }}">
@@ -701,7 +701,7 @@
             <div class="sidebar-section-header">Laporan</div>
             <a href="/dashboard/laporan" class="nav-link {{ request()->is('dashboard/laporan*') ? 'active' : '' }}">
                 <i class="fas fa-chart-pie"></i>
-                <span>Laporan</span>
+                <span>Laporan Keuangan</span>
             </a>
 
             <div class="sidebar-section-header">Setting</div>

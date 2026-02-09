@@ -67,7 +67,7 @@ class OrderCustomerController extends Controller
             // SIMPAN ORDER (status pending sampai pembayaran berhasil)
             $order = Order::create([
                 'order_csname'  => $request->customer_name,
-                'order_meja'    => $meja ? $meja->meja_id : null,
+                'order_meja'    => $meja ? $meja->meja_id : 'T/A',
                 'order_total'   => $request->total,
                 'order_qty'     => collect($request->items)->sum('qty'),
                 'order_change'  => 0,
@@ -178,7 +178,7 @@ class OrderCustomerController extends Controller
             ],
             'item_details' => $item_details,
             'callbacks' => [
-                'finish' => url('/payment/finish'),
+                'finish' => url('/'),
             ],
         ];
 

@@ -251,7 +251,7 @@ $level = $user->id_level;
                     <table class="table table-custom mb-0">
                         <thead>
                             <tr>
-                                <th>ORDER ID</th>
+                                <th>#</th>
                                 <th>CUSTOMER</th>
                                 <th>MEJA</th>
                                 <th>TOTAL</th>
@@ -264,7 +264,7 @@ $level = $user->id_level;
                             @continue($order->order_status === 'cancelled')
 
                             <tr>
-                                <td><strong>#{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</strong></td>
+                                <td>{{ $loop->iteration }}</td>
                                 <td>{{ $order->order_csname }}</td>
                                 <td>
                                     <span class="badge badge-custom bg-secondary">
@@ -431,7 +431,7 @@ $level = $user->id_level;
                     <table class="table table-custom mb-0">
                         <thead>
                             <tr>
-                                <th>ORDER ID</th>
+                                <th>#</th>
                                 <th>CUSTOMER</th>
                                 <th>MEJA</th>
                                 <th>TOTAL</th>
@@ -441,7 +441,7 @@ $level = $user->id_level;
                         <tbody>
                             @foreach($orderPending as $order)
                             <tr>
-                                <td><strong>#{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</strong></td>
+                                <td>{{ $loop->iteration }}</td>
                                 <td>{{ $order->order_csname }}</td>
                                 <td>
                                     <span class="badge badge-custom bg-secondary">
@@ -546,7 +546,7 @@ $level = $user->id_level;
                     <table class="table table-custom mb-0">
                         <thead>
                             <tr>
-                                <th>ORDER ID</th>
+                                <th>#</th>
                                 <th>CUSTOMER</th>
                                 <th>TOTAL</th>
                                 <th>STATUS</th>
@@ -558,7 +558,7 @@ $level = $user->id_level;
                             @continue($order->order_status === 'cancelled')
 
                             <tr>
-                                <td><strong>#{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</strong></td>
+                                <td>{{ $loop->iteration }}</td>
                                 <td>{{ $order->order_csname }}</td>
                                 <td class="fw-bold text-success">Rp {{ number_format($order->order_total, 0, ',', '.') }}</td>
                                 <td>
