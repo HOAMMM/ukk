@@ -641,15 +641,15 @@
                 <i class="fas fa-receipt"></i>
                 <span>Transaksi</span>
             </a>
+            <a href="/dashboard/pesanan" class="nav-link {{ request()->is('dashboard/pesanan*') ? 'active' : '' }}">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Pesanan</span>
+            </a>
 
             <div class="sidebar-section-header">Produk</div>
             <a href="/dashboard/menu" class="nav-link {{ request()->is('dashboard/menu*') ? 'active' : '' }}">
                 <i class="fas fa-hamburger"></i>
                 <span>Menu</span>
-            </a>
-            <a href="/dashboard/pesanan" class="nav-link {{ request()->is('dashboard/pesanan*') ? 'active' : '' }}">
-                <i class="fas fa-clipboard-list"></i>
-                <span>Pesanan</span>
             </a>
             <a href="/dashboard/kategori" class="nav-link {{ request()->is('dashboard/kategori-produk*') ? 'active' : '' }}">
                 <i class="fas fa-tags"></i>

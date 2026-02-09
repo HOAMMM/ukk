@@ -10,6 +10,7 @@ use App\Models\Meja;
 use Illuminate\Http\Request;
 use Midtrans\Snap;
 use Midtrans\Notification;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -21,7 +22,7 @@ class OrderCustomerController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'customer_name'      => 'required|string|max:100',
+            'customer_name'      => 'required|string|min:3|max:100',
             'order_type'         => 'required|in:dine_in,takeaway',
             'table_number'       => $request->order_type === 'dine_in' ? 'required|numeric' : 'nullable',
             'items'              => 'required|array|min:1',
@@ -33,6 +34,10 @@ class OrderCustomerController extends Controller
             'tax'                => 'required|numeric|min:0',
             'total'              => 'required|numeric|min:1',
             'notes'              => 'nullable|string|max:500',
+        ], [
+            'table_number.required' => 'Nomor meja wajib diisi untuk tipe pesanan dine-in.',
+            'customer_name.required' => 'Nama pelanggan wajib diisi.',
+            'customer_name.min' => 'Nama pelanggan minimal 3 karakter.',
         ]);
 
         DB::beginTransaction();
@@ -69,13 +74,13 @@ class OrderCustomerController extends Controller
                 'order_type'    => $request->order_type,
                 'order_message' => $request->notes,
                 'order_metode'  => 'MIDTRANS',
-                'order_channel' => null, // akan diisi setelah payment
+                'order_channel' => null,
                 'order_status'  => 'pending',
                 'created_at'    => now()
             ]);
 
             // GENERATE KODE TRANSAKSI
-            $kodeTransaksi = 'TRX-' . now()->format('Ymd') . '-' . str_pad($order->order_id, 4, '0', STR_PAD_LEFT);
+            $kodeTransaksi = 'TRX-' . strtoupper(Str::random(6));
 
             // SIMPAN TRANSAKSI
             $transaksi = Transaksi::create([
@@ -86,7 +91,7 @@ class OrderCustomerController extends Controller
                 'transaksi_change'  => 0,
                 'transaksi_message' => $request->notes,
                 'transaksi_status'  => 'pending',
-                'transaksi_channel' => null, // akan diisi setelah payment
+                'transaksi_channel' => null,
                 'transaksi_code'    => $kodeTransaksi,
                 'created_at'        => now()
             ]);
@@ -110,7 +115,6 @@ class OrderCustomerController extends Controller
             return response()->json([
                 'success'        => true,
                 'message'        => 'Pesanan berhasil dibuat',
-                'order_number'   => 'ORD-' . str_pad($order->order_id, 5, '0', STR_PAD_LEFT),
                 'order_id'       => $order->order_id,
                 'transaksi_code' => $kodeTransaksi,
                 'snap_token'     => $snapToken,
@@ -173,6 +177,9 @@ class OrderCustomerController extends Controller
                 'first_name' => $order->order_csname,
             ],
             'item_details' => $item_details,
+            'callbacks' => [
+                'finish' => url('/payment/finish'),
+            ],
         ];
 
         try {
@@ -202,7 +209,6 @@ class OrderCustomerController extends Controller
             $fraudStatus = $notif->fraud_status ?? null;
             $paymentType = $notif->payment_type ?? null;
 
-            // Ambil payment channel dari notification
             $paymentChannel = $this->getPaymentChannel($notif);
 
             Log::info('Midtrans Callback', [
@@ -215,10 +221,10 @@ class OrderCustomerController extends Controller
 
             $transaksi = Transaksi::where('transaksi_code', $orderId)->firstOrFail();
             $order = Order::where('order_id', $transaksi->transaksi_orderid)->firstOrFail();
+            $paidAmount = (int) $notif->gross_amount;
+
 
             if (in_array($transactionStatus, ['capture', 'settlement'])) {
-
-                // ✅ PAYMENT SUCCESS
                 if ($fraudStatus == 'accept' || $fraudStatus === null) {
                     $order->update([
                         'order_status' => 'paid',
@@ -226,11 +232,12 @@ class OrderCustomerController extends Controller
                     ]);
 
                     $transaksi->update([
-                        'transaksi_status' => 'success',
+                        'transaksi_status'  => 'success',
                         'transaksi_channel' => $paymentChannel,
+                        'transaksi_amount'  => $paidAmount,
+                        'transaksi_change'  => 0
                     ]);
 
-                    // ✅ UPDATE MEJA JADI TERISI (hanya untuk dine_in)
                     if ($order->order_type === 'dine_in' && $order->order_meja) {
                         Meja::where('meja_id', $order->order_meja)
                             ->update(['meja_status' => 'terisi']);
@@ -242,8 +249,6 @@ class OrderCustomerController extends Controller
                     ]);
                 }
             } elseif ($transactionStatus === 'pending') {
-
-                // ⏳ PAYMENT PENDING
                 $order->update([
                     'order_channel' => $paymentChannel,
                 ]);
@@ -258,19 +263,17 @@ class OrderCustomerController extends Controller
                     'channel' => $paymentChannel
                 ]);
             } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
-
-                // ❌ PAYMENT FAILED
                 $order->update([
-                    'order_status' => 'payment_failed',
+                    'order_status' => 'cancelled',
                     'order_channel' => $paymentChannel,
                 ]);
 
                 $transaksi->update([
-                    'transaksi_status' => 'failed',
+                    'transaksi_status' => 'cancelled',
                     'transaksi_channel' => $paymentChannel,
                 ]);
 
-                Log::info('Payment FAILED', [
+                Log::info('Payment FAILED/CANCELLED', [
                     'order_id' => $orderId,
                     'status' => $transactionStatus,
                     'channel' => $paymentChannel
@@ -290,11 +293,14 @@ class OrderCustomerController extends Controller
         }
     }
 
+    /**
+     * PAYMENT FINISH (Redirect setelah payment)
+     */
     public function paymentFinish(Request $request)
     {
-        return redirect('/pesanan')
-            ->with('success', 'Pembayaran berhasil, pesanan sedang diproses');
+        return redirect('/')->with('payment_status', 'completed');
     }
+
     /**
      * Get Payment Channel dari Midtrans Notification
      */
@@ -302,7 +308,6 @@ class OrderCustomerController extends Controller
     {
         $paymentType = $notif->payment_type ?? 'unknown';
 
-        // Map payment type ke channel yang lebih readable
         $channelMap = [
             'credit_card' => 'Credit Card',
             'bank_transfer' => $this->getBankName($notif),
@@ -317,9 +322,6 @@ class OrderCustomerController extends Controller
         return $channelMap[$paymentType] ?? ucfirst(str_replace('_', ' ', $paymentType));
     }
 
-    /**
-     * Get Bank Name untuk bank transfer
-     */
     private function getBankName($notif)
     {
         if (isset($notif->va_numbers) && !empty($notif->va_numbers)) {
@@ -334,9 +336,6 @@ class OrderCustomerController extends Controller
         return 'Bank Transfer';
     }
 
-    /**
-     * Get Convenience Store Name
-     */
     private function getConvenienceStoreName($notif)
     {
         $store = $notif->store ?? 'Unknown';
@@ -423,38 +422,91 @@ class OrderCustomerController extends Controller
     }
 
     /**
-     * CANCEL ORDER (Customer)
+     * CANCEL ORDER (Customer - dipanggil saat user close snap popup)
+     * FIXED: Tambah try-catch dan logging yang lebih detail
      */
     public function cancel($orderId)
     {
-        DB::beginTransaction();
-
         try {
-            $order = Order::where('order_id', $orderId)
-                ->where('order_status', 'pending')
-                ->firstOrFail();
+            // Log incoming request
+            Log::info('Cancel order request received', [
+                'order_id' => $orderId,
+                'timestamp' => now()
+            ]);
 
-            $transaksi = Transaksi::where('transaksi_orderid', $orderId)->first();
+            // Validasi order_id
+            if (!is_numeric($orderId)) {
+                Log::warning('Invalid order_id format', ['order_id' => $orderId]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order ID tidak valid'
+                ], 400);
+            }
 
-            // Update status
+            DB::beginTransaction();
+
+            // Cek apakah order ada
+            $order = Order::find($orderId);
+
+            if (!$order) {
+                Log::warning('Order not found', ['order_id' => $orderId]);
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order tidak ditemukan'
+                ], 404);
+            }
+
+            // Cek status order - hanya cancel jika pending
+            if ($order->order_status !== 'pending') {
+                Log::info('Order already processed', [
+                    'order_id' => $orderId,
+                    'current_status' => $order->order_status
+                ]);
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order sudah diproses dan tidak bisa dibatalkan',
+                    'current_status' => $order->order_status
+                ], 422);
+            }
+
+            // Update order status
             $order->update(['order_status' => 'cancelled']);
 
+            // Update transaksi jika ada
+            $transaksi = Transaksi::where('transaksi_orderid', $orderId)->first();
             if ($transaksi) {
                 $transaksi->update(['transaksi_status' => 'cancelled']);
             }
 
             DB::commit();
 
+            Log::info('Order cancelled successfully', [
+                'order_id' => $orderId,
+                'transaksi_code' => $transaksi->transaksi_code ?? null
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Pesanan berhasil dibatalkan'
+                'message' => 'Pesanan berhasil dibatalkan',
+                'order_id' => $orderId,
+                'new_status' => 'cancelled'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
 
+            Log::error('Cancel order failed', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membatalkan pesanan'
+                'message' => 'Gagal membatalkan pesanan: ' . $e->getMessage()
             ], 500);
         }
     }

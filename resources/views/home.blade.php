@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Restaurant HQ</title>
+    <link rel="apple-touch-icon" href="{{ asset('favicon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16.png') }}">
+
     <link rel="stylesheet" href="{{ asset('bootstrap/css/bootstrap.min.css') }}">
     <link href="{{ asset('bootstrap/icon/bootstrap-icons.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('fontawesome/css/all.min.css') }}">
@@ -767,7 +771,7 @@
 
         <div class="menu-grid">
             @forelse ($menus as $menu)
-            <div class="menu-card" data-category="{{ $menu->menu_kategori }}">
+            <div class="menu-card" data-category="{{ $menu->menu_kategori }}" data-name="{{ strtolower($menu->menu_name) }}">
                 <div class="menu-img-wrapper">
                     <img src="{{ asset('uploads/menu/' . $menu->menu_image) }}" class="menu-img"
                         alt="{{ $menu->menu_name }}">
@@ -776,7 +780,9 @@
                             class="fas fa-heart"></i></button>
                 </div>
                 <div class="menu-body">
-                    <div class="menu-name">{{ $menu->menu_name }}</div>
+                    <div class="menu-name" data-original="{{ $menu->menu_name }}">
+                        {{ $menu->menu_name }}
+                    </div>
                     <div class="menu-footer">
                         <div class="menu-price">Rp {{ number_format($menu->menu_price, 0, ',', '.') }}</div>
                         <button class="btn-add" onclick='addToCart(@json($menu))'><i
@@ -837,7 +843,7 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label class="form-label">Nama </label>
-                    <input type="text" class="form-control" id="customer-name" required placeholder="Masukan Nama Anda">
+                    <input type="text" class="form-control" id="customer-name" required placeholder="Masukan Nama Anda" autocomplete="off">
                 </div>
 
                 <!-- ORDER TYPE -->
@@ -921,6 +927,54 @@
         data-client-key="{{ config('midtrans.client_key') }}">
     </script>
     <script src="{{ asset('sweetalert/sweetalert2.all.min.js') }}"></script>
+    <script>
+        /* ===============================
+   CATEGORY & SEARCH FILTER
+================================ */
+        document.addEventListener('DOMContentLoaded', () => {
+            const categoryItems = document.querySelectorAll('.category-item');
+            const menuCards = document.querySelectorAll('.menu-card');
+            const searchInput = document.getElementById('search-input');
+
+            let activeCategory = 'all';
+            let searchKeyword = '';
+
+            // FILTER FUNCTION
+            function filterMenu() {
+                menuCards.forEach(card => {
+                    const category = card.dataset.category;
+                    const name = card.dataset.name;
+
+                    const matchCategory =
+                        activeCategory === 'all' || category === activeCategory;
+
+                    const matchSearch =
+                        name.includes(searchKeyword);
+
+                    card.style.display =
+                        matchCategory && matchSearch ? 'block' : 'none';
+                });
+            }
+
+            // CATEGORY CLICK
+            categoryItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    categoryItems.forEach(c => c.classList.remove('active'));
+                    item.classList.add('active');
+
+                    activeCategory = item.dataset.category;
+                    filterMenu();
+                });
+            });
+
+            // SEARCH INPUT
+            searchInput.addEventListener('input', (e) => {
+                searchKeyword = e.target.value.toLowerCase().trim();
+                filterMenu();
+            });
+        });
+    </script>
+
 
     <script>
         /* ===============================
@@ -930,6 +984,8 @@
         let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
         let selectedMeja = null;
         let selectedOrderType = 'dine_in';
+        let currentOrderId = null;
+        let isCancelling = false; // Prevent double cancel
 
         /* ===============================
            CART
@@ -1067,7 +1123,61 @@
                 `Meja dipilih: <strong>${selectedMeja.name}</strong> (Kapasitas ${selectedMeja.kapasitas} orang)`;
         }
 
-        // SUBMIT ORDER - UPDATED
+        /* ===============================
+           CANCEL ORDER - IMPROVED
+        ================================ */
+        async function cancelOrder(orderId) {
+            // Prevent double cancel
+            if (isCancelling) {
+                console.log('Already cancelling order...');
+                return;
+            }
+
+            if (!orderId) {
+                console.log('No order ID to cancel');
+                return;
+            }
+
+            isCancelling = true;
+
+            try {
+                console.log('Cancelling order:', orderId);
+
+                const response = await fetch(`/api/orders/${orderId}/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response from cancel:', text);
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    console.log('Order cancelled successfully:', orderId);
+                } else {
+                    console.error('Failed to cancel order:', result.message);
+                }
+            } catch (error) {
+                console.error('Cancel order error:', error);
+                // Don't show error to user, just log it
+            } finally {
+                isCancelling = false;
+            }
+        }
+
+        /* ===============================
+           SUBMIT ORDER - IMPROVED
+        ================================ */
         async function submitOrder() {
             const name = document.getElementById('customer-name').value;
             const table = document.getElementById('table-number').value;
@@ -1134,30 +1244,50 @@
                     return;
                 }
 
+                // Simpan order ID untuk cancel jika diperlukan
+                currentOrderId = result.order_id;
+                console.log('Order created:', currentOrderId);
+
                 // BUKA SNAP PAYMENT
                 if (result.snap_token) {
                     window.snap.pay(result.snap_token, {
-                        onSuccess: function(result) {
-                            console.log('Payment success:', result);
+                        onSuccess: function(snapResult) {
+                            console.log('Payment success:', snapResult);
+                            const tempOrderId = currentOrderId;
+                            currentOrderId = null;
+                            isCancelling = false;
                             showSuccessMessage(
-                                'ORD-' + String(result.order_id).padStart(5, '0'),
+                                'ORD-' + String(tempOrderId).padStart(5, '0'),
                                 'Pembayaran berhasil! Pesanan Anda sedang diproses.'
                             );
                         },
-                        onPending: function(result) {
-                            console.log('Payment pending:', result);
+                        onPending: function(snapResult) {
+                            console.log('Payment pending:', snapResult);
+                            const tempOrderId = currentOrderId;
+                            currentOrderId = null;
+                            isCancelling = false;
                             showSuccessMessage(
-                                'ORD-' + String(result.order_id).padStart(5, '0'),
+                                'ORD-' + String(tempOrderId).padStart(5, '0'),
                                 'Menunggu pembayaran. Silakan selesaikan pembayaran Anda.'
                             );
                         },
-                        onError: function(result) {
-                            console.log('Payment error:', result);
+                        onError: function(snapResult) {
+                            console.log('Payment error:', snapResult);
+                            if (currentOrderId && !isCancelling) {
+                                const tempOrderId = currentOrderId;
+                                currentOrderId = null;
+                                cancelOrder(tempOrderId);
+                            }
                             showToast('❌ Pembayaran gagal. Silakan coba lagi.');
                             document.getElementById('checkout-modal').classList.add('active');
                         },
                         onClose: function() {
-                            console.log('Payment popup closed without completing payment');
+                            console.log('Payment popup closed');
+                            if (currentOrderId && !isCancelling) {
+                                const tempOrderId = currentOrderId;
+                                currentOrderId = null;
+                                cancelOrder(tempOrderId);
+                            }
                             showToast('⚠ Pembayaran dibatalkan');
                             document.getElementById('checkout-modal').classList.add('active');
                         }
@@ -1200,18 +1330,21 @@
 
         function resetCart() {
             cart = [];
+            currentOrderId = null;
+            isCancelling = false;
             document.getElementById('cart-badge').textContent = 0;
             document.getElementById('bottom-cart-qty').textContent = 0;
             document.getElementById('bottom-cart-total').textContent = 'Rp 0';
             document.getElementById('cart-body').innerHTML = `
-                <div class="empty-cart">
-                    <i class="fas fa-shopping-cart"></i>
-                    <h4>Keranjang Kosong</h4>
-                </div>
-            `;
+        <div class="empty-cart">
+            <i class="fas fa-shopping-cart"></i>
+            <h4>Keranjang Kosong</h4>
+        </div>
+    `;
             document.getElementById('cart-footer').style.display = 'none';
             document.getElementById('cart-modal').classList.remove('active');
         }
+
         /* ===============================
            UTILS
         ================================ */

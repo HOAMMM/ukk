@@ -196,7 +196,7 @@ class OrderController extends Controller
             $order->update([
                 'order_total'  => $request->bayar,
                 'order_change' => $kembalian,
-                'order_status' => 'success'
+                'order_status' => 'paid'
             ]);
 
             /* ===============================
@@ -232,7 +232,7 @@ class OrderController extends Controller
         try {
             // Ambil data order
             $order = Order::where('order_id', $order_id)
-                ->where('order_status', 'success')
+                ->where('order_status', 'paid')
                 ->firstOrFail();
 
             // Ambil transaksi

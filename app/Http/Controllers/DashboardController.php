@@ -42,9 +42,9 @@ class DashboardController extends Controller
     public function getCommonData()
     {
         // Pendapatan hari ini
-        $pendapatanHariIni = Order::whereDate('created_at', today())
-            ->where('order_status', 'success')
+        $totalPendapatan = Order::where('order_status', 'paid')
             ->sum('order_total');
+
 
         // Total transaksi hari ini
         $transaksiHariIni = Order::whereDate('created_at', today())
@@ -58,7 +58,7 @@ class DashboardController extends Controller
         $totalMeja = Meja::count();
 
         return [
-            'pendapatanHariIni' => $pendapatanHariIni,
+            'totalPendapatan' => $totalPendapatan,
             'transaksiHariIni' => $transaksiHariIni,
             'totalMenu' => $totalMenu,
             'mejaAktif' => $mejaAktif,

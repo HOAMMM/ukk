@@ -23,7 +23,7 @@ class LaporanController extends Controller
         $baseQuery = Order::query();
 
         if ($tgl_mulai && $tgl_selesai) {
-            $baseQuery->whereBetween('created_at', [
+            $baseQuery->whereBetween('tb_order.created_at', [
                 $tgl_mulai . ' 00:00:00',
                 $tgl_selesai . ' 23:59:59'
             ]);

@@ -29,17 +29,17 @@ Route::prefix('orders')->group(function () {
     // Check order status
     Route::get('/{orderId}/status', [OrderCustomerController::class, 'checkStatus']);
 
-    // Payment Cash (Tunai)
-    Route::post('/payment/cash', [OrderCustomerController::class, 'paymentCash']);
-
-    // Cancel Payment
-    Route::post('/payment/cancel', [OrderCustomerController::class, 'cancelPayment']);
+    // Cancel order (saat user close snap popup)
+    Route::post('/{orderId}/cancel', [OrderCustomerController::class, 'cancel']);
 });
 
 /*
 |--------------------------------------------------------------------------
-| Payment Callback (dari Payment Gateway)
+| Payment Routes
 |--------------------------------------------------------------------------
 */
+// Payment Callback (dari Midtrans server)
 Route::post('/payment/callback', [OrderCustomerController::class, 'paymentCallback']);
+
+// Payment Finish (redirect setelah payment - bisa GET)
 Route::get('/payment/finish', [OrderCustomerController::class, 'paymentFinish']);

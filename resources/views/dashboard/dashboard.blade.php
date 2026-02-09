@@ -185,8 +185,10 @@ $level = $user->id_level;
             <div class="stat-icon">
                 <i class="fas fa-money-bill-wave"></i>
             </div>
-            <div class="stat-label">Pendapatan Hari Ini</div>
-            <div class="stat-value">Rp {{ number_format($pendapatanHariIni, 0, ',', '.') }}</div>
+            <div class="stat-label">Total Pendapatan</div>
+            <div class="stat-value">
+                Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+            </div>
             <div class="stat-change">
                 <i class="fas fa-arrow-up"></i> Aktif
             </div>
@@ -259,6 +261,8 @@ $level = $user->id_level;
                         </thead>
                         <tbody>
                             @forelse($transaksiTerbaru as $order)
+                            @continue($order->order_status === 'cancelled')
+
                             <tr>
                                 <td><strong>#{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</strong></td>
                                 <td>{{ $order->order_csname }}</td>
@@ -267,17 +271,19 @@ $level = $user->id_level;
                                         {{ $order->meja?->meja_nama ?? 'Takeaway' }}
                                     </span>
                                 </td>
-                                <td class="fw-bold text-success">Rp {{ number_format($order->order_total, 0, ',', '.') }}</td>
+                                <td class="fw-bold text-success">
+                                    Rp {{ number_format($order->order_total, 0, ',', '.') }}
+                                </td>
                                 <td>
-                                    @if($order->order_status == 'success')
-                                    <span class="badge badge-custom bg-success">Selesai</span>
+                                    @if($order->order_status == 'paid')
+                                    <span class="badge badge-custom bg-success">Paid</span>
                                     @elseif($order->order_status == 'pending')
                                     <span class="badge badge-custom bg-warning">Pending</span>
-                                    @else
-                                    <span class="badge badge-custom bg-danger">{{ $order->order_status }}</span>
                                     @endif
                                 </td>
-                                <td class="text-muted">{{ $order->created_at->format('d M Y H:i') }}</td>
+                                <td class="text-muted">
+                                    {{ $order->created_at->format('d M Y H:i') }}
+                                </td>
                             </tr>
                             @empty
                             <tr>
@@ -288,6 +294,7 @@ $level = $user->id_level;
                             </tr>
                             @endforelse
                         </tbody>
+
                     </table>
                 </div>
             </div>
@@ -463,8 +470,11 @@ $level = $user->id_level;
             <div class="stat-icon">
                 <i class="fas fa-money-bill-wave"></i>
             </div>
-            <div class="stat-label">Pendapatan Hari Ini</div>
-            <div class="stat-value">Rp {{ number_format($pendapatanHariIni, 0, ',', '.') }}</div>
+            <div class="stat-label">Total Pendapatan</div>
+            <div class="stat-value">
+                Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+            </div>
+
         </div>
     </div>
 
@@ -545,17 +555,17 @@ $level = $user->id_level;
                         </thead>
                         <tbody>
                             @forelse($orderHariIni as $order)
+                            @continue($order->order_status === 'cancelled')
+
                             <tr>
                                 <td><strong>#{{ str_pad($order->order_id, 5, '0', STR_PAD_LEFT) }}</strong></td>
                                 <td>{{ $order->order_csname }}</td>
                                 <td class="fw-bold text-success">Rp {{ number_format($order->order_total, 0, ',', '.') }}</td>
                                 <td>
-                                    @if($order->order_status == 'success')
-                                    <span class="badge badge-custom bg-success">Selesai</span>
+                                    @if($order->order_status == 'paid')
+                                    <span class="badge badge-custom bg-success">Paid</span>
                                     @elseif($order->order_status == 'pending')
                                     <span class="badge badge-custom bg-warning">Pending</span>
-                                    @else
-                                    <span class="badge badge-custom bg-info">{{ $order->order_status }}</span>
                                     @endif
                                 </td>
                                 <td class="text-muted">{{ $order->created_at->format('H:i') }}</td>
@@ -644,8 +654,11 @@ $level = $user->id_level;
             <div class="stat-icon">
                 <i class="fas fa-chart-line"></i>
             </div>
-            <div class="stat-label">Pendapatan Hari Ini</div>
-            <div class="stat-value">Rp {{ number_format($pendapatanHariIni, 0, ',', '.') }}</div>
+            <div class="stat-label">Total Pendapatan</div>
+            <div class="stat-value">
+                Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+            </div>
+
         </div>
     </div>
 
