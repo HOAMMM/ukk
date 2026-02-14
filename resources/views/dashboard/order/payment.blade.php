@@ -311,7 +311,7 @@
                     id="csname"
                     class="form-control"
                     placeholder="Masukkan nama pelanggan"
-                    required
+
                     autocomplete="off">
             </div>
 
@@ -368,7 +368,7 @@
                     class="form-control"
                     placeholder="Masukkan jumlah uang bayar"
                     min="1"
-                    required
+
                     autocomplete="off">
             </div>
 

@@ -8,6 +8,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f3460">
+    <!-- 👇 TAMBAHKAN 3 META TAG INI -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link href="{{ asset('bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('sweetalert/sweetalert2.min.css') }}">
     <style>
@@ -787,11 +791,12 @@
                     </div>
                 </div>
 
-                <div class="forgot-password">
+                <!-- <div class="forgot-password">
                     <a href="#">Lupa Password?</a>
+                </div> -->
+                <div class="mt-4">
+                    <button type="submit" class="btn-login">Login</button>
                 </div>
-
-                <button type="submit" class="btn-login">Login</button>
 
                 <div class="divider">
                 </div>
@@ -802,6 +807,18 @@
 
 <script src="{{ asset('bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('sweetalert/sweetalert2.all.min.js') }}"></script>
+<!-- 👇 TAMBAHKAN SCRIPT INI -->
+<script>
+    // Prevent back button after login
+    (function() {
+        if (typeof window.history.pushState === 'function') {
+            window.history.pushState(null, null, window.location.href);
+            window.onpopstate = function() {
+                window.history.pushState(null, null, window.location.href);
+            };
+        }
+    })();
+</script>
 
 @if (session('error'))
 <script>

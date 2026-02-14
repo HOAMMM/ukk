@@ -87,7 +87,7 @@ class DashboardController extends Controller
             ->get();
 
         // Pendapatan 7 hari terakhir
-        $pendapatan7Hari = Order::where('order_status', 'success')
+        $pendapatan7Hari = Order::where('order_status', 'paid')
             ->where('created_at', '>=', now()->subDays(7))
             ->select(
                 DB::raw('DATE(created_at) as tanggal'),
@@ -127,6 +127,7 @@ class DashboardController extends Controller
             'mejaTerisi' => $mejaTerisi,
             'daftarMeja' => $daftarMeja,
             'orderPending' => $orderPending,
+            'totalMeja' => Meja::count(),
         ];
     }
 
@@ -166,13 +167,13 @@ class DashboardController extends Controller
         // Pendapatan bulan ini
         $pendapatanBulanIni = Order::whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->where('order_status', 'success')
+            ->where('order_status', 'paid')
             ->sum('order_total');
 
         // Pendapatan bulan lalu
         $pendapatanBulanLalu = Order::whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
-            ->where('order_status', 'success')
+            ->where('order_status', 'paid')
             ->sum('order_total');
 
         // Persentase perubahan
@@ -182,7 +183,7 @@ class DashboardController extends Controller
         }
 
         // Pendapatan per bulan (12 bulan terakhir)
-        $pendapatanPerBulan = Order::where('order_status', 'success')
+        $pendapatanPerBulan = Order::where('order_status', 'paid')
             ->where('created_at', '>=', now()->subMonths(12))
             ->select(
                 DB::raw('MONTH(created_at) as bulan'),

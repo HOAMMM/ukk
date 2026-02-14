@@ -17,6 +17,11 @@
         position: relative;
         overflow: hidden;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+        min-height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
 
     .stat-card:hover {
@@ -48,24 +53,28 @@
     }
 
     .stat-value {
-        font-size: 2rem;
+        font-size: 1.75rem;
         font-weight: 700;
         margin: 0.5rem 0;
+        line-height: 1.2;
+        word-break: break-word;
     }
 
     .stat-label {
         font-size: 0.9rem;
         opacity: 0.9;
         font-weight: 500;
+        margin-bottom: 0.5rem;
     }
 
     .stat-change {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         margin-top: 0.5rem;
         display: inline-block;
         padding: 0.25rem 0.75rem;
         background: rgba(255, 255, 255, 0.2);
         border-radius: 20px;
+        line-height: 1.5;
     }
 
     .card-custom {
@@ -164,6 +173,10 @@
             font-size: 1.25rem;
         }
 
+        .stat-card {
+            min-height: 160px;
+        }
+
         .meja-grid {
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: 0.75rem;
@@ -182,12 +195,14 @@ $level = $user->id_level;
 <div class="row g-4 mb-4">
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--success-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-money-bill-wave"></i>
-            </div>
-            <div class="stat-label">Total Pendapatan</div>
-            <div class="stat-value">
-                Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="stat-label">Total Pendapatan</div>
+                <div class="stat-value">
+                    Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+                </div>
             </div>
             <div class="stat-change">
                 <i class="fas fa-arrow-up"></i> Aktif
@@ -197,11 +212,13 @@ $level = $user->id_level;
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--info-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-receipt"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="stat-label">Transaksi Hari Ini</div>
+                <div class="stat-value">{{ $transaksiHariIni }}</div>
             </div>
-            <div class="stat-label">Transaksi Hari Ini</div>
-            <div class="stat-value">{{ $transaksiHariIni }}</div>
             <div class="stat-change">
                 <i class="fas fa-chart-line"></i> Transaksi
             </div>
@@ -210,11 +227,13 @@ $level = $user->id_level;
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--warning-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-users"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-label">Total Staff</div>
+                <div class="stat-value">{{ $totalKasir + $totalWaiter }}</div>
             </div>
-            <div class="stat-label">Total Staff</div>
-            <div class="stat-value">{{ $totalKasir + $totalWaiter }}</div>
             <div class="stat-change">
                 Kasir: {{ $totalKasir }} | Waiter: {{ $totalWaiter }}
             </div>
@@ -223,11 +242,13 @@ $level = $user->id_level;
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--primary-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-chair"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-chair"></i>
+                </div>
+                <div class="stat-label">Meja Aktif</div>
+                <div class="stat-value">{{ $mejaAktif }}/{{ $totalMeja }}</div>
             </div>
-            <div class="stat-label">Meja Aktif</div>
-            <div class="stat-value">{{ $mejaAktif }}/{{ $totalMeja }}</div>
             <div class="stat-change">
                 {{ $totalMeja > 0 ? round(($mejaAktif / $totalMeja) * 100) : 0 }}% Terisi
             </div>
@@ -338,44 +359,52 @@ $level = $user->id_level;
 <div class="row g-4 mb-4">
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--success-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-check-circle"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-label">Meja Tersedia</div>
+                <div class="stat-value">{{ $mejaTersedia }}</div>
             </div>
-            <div class="stat-label">Meja Tersedia</div>
-            <div class="stat-value">{{ $mejaTersedia }}</div>
             <div class="stat-change">Siap Digunakan</div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--danger-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-users"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-label">Meja Terisi</div>
+                <div class="stat-value">{{ $mejaTerisi }}</div>
             </div>
-            <div class="stat-label">Meja Terisi</div>
-            <div class="stat-value">{{ $mejaTerisi }}</div>
             <div class="stat-change">Sedang Digunakan</div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--warning-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-clock"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-label">Order Pending</div>
+                <div class="stat-value">{{ $orderPending->count() }}</div>
             </div>
-            <div class="stat-label">Order Pending</div>
-            <div class="stat-value">{{ $orderPending->count() }}</div>
             <div class="stat-change">Perlu Perhatian</div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--info-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-chair"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-chair"></i>
+                </div>
+                <div class="stat-label">Total Meja</div>
+                <div class="stat-value">{{ $totalMeja }}</div>
             </div>
-            <div class="stat-label">Total Meja</div>
-            <div class="stat-value">{{ $totalMeja }}</div>
             <div class="stat-change">Kapasitas Penuh</div>
         </div>
     </div>
@@ -467,44 +496,63 @@ $level = $user->id_level;
 <div class="row g-4 mb-4">
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--success-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-money-bill-wave"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="stat-label">Total Pendapatan</div>
+                <div class="stat-value">
+                    Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+                </div>
             </div>
-            <div class="stat-label">Total Pendapatan</div>
-            <div class="stat-value">
-                Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+            <div class="stat-change">
+                <i class="fas fa-check-circle"></i> Terkonfirmasi
             </div>
-
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--info-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-receipt"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="stat-label">Transaksi Hari Ini</div>
+                <div class="stat-value">{{ $transaksiHariIni }}</div>
             </div>
-            <div class="stat-label">Transaksi Hari Ini</div>
-            <div class="stat-value">{{ $transaksiHariIni }}</div>
+            <div class="stat-change">
+                <i class="fas fa-chart-line"></i> Total Order
+            </div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--warning-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-box"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="stat-label">Item Terjual</div>
+                <div class="stat-value">{{ $itemTerjualHariIni }}</div>
             </div>
-            <div class="stat-label">Item Terjual</div>
-            <div class="stat-value">{{ $itemTerjualHariIni }}</div>
+            <div class="stat-change">
+                <i class="fas fa-shopping-cart"></i> Hari Ini
+            </div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--primary-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-chair"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-chair"></i>
+                </div>
+                <div class="stat-label">Meja Aktif</div>
+                <div class="stat-value">{{ $mejaAktif }}/{{ $totalMeja }}</div>
             </div>
-            <div class="stat-label">Meja Aktif</div>
-            <div class="stat-value">{{ $mejaAktif }}/{{ $totalMeja }}</div>
+            <div class="stat-change">
+                {{ $totalMeja > 0 ? round(($mejaAktif / $totalMeja) * 100) : 0 }}% Terisi
+            </div>
         </div>
     </div>
 </div>
@@ -621,11 +669,13 @@ $level = $user->id_level;
 <div class="row g-4 mb-4">
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--success-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-dollar-sign"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-label">Pendapatan Bulan Ini</div>
+                <div class="stat-value">Rp {{ number_format($pendapatanBulanIni, 0, ',', '.') }}</div>
             </div>
-            <div class="stat-label">Pendapatan Bulan Ini</div>
-            <div class="stat-value">Rp {{ number_format($pendapatanBulanIni, 0, ',', '.') }}</div>
             <div class="stat-change">
                 @if($perubahanPendapatan > 0)
                 <i class="fas fa-arrow-up"></i> +{{ number_format($perubahanPendapatan, 1) }}%
@@ -641,34 +691,48 @@ $level = $user->id_level;
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--info-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-receipt"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="stat-label">Transaksi Bulan Ini</div>
+                <div class="stat-value">{{ $transaksiBulanIni }}</div>
             </div>
-            <div class="stat-label">Transaksi Bulan Ini</div>
-            <div class="stat-value">{{ $transaksiBulanIni }}</div>
+            <div class="stat-change">
+                <i class="fas fa-calendar-alt"></i> Periode Berjalan
+            </div>
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--warning-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-chart-line"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-label">Total Pendapatan</div>
+                <div class="stat-value">
+                    Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+                </div>
             </div>
-            <div class="stat-label">Total Pendapatan</div>
-            <div class="stat-value">
-                Rp {{ number_format($totalPendapatan, 0, ',', '.') }}
+            <div class="stat-change">
+                <i class="fas fa-infinity"></i> Akumulasi
             </div>
-
         </div>
     </div>
 
     <div class="col-lg-3 col-md-6">
         <div class="stat-card" style="background: var(--primary-gradient);">
-            <div class="stat-icon">
-                <i class="fas fa-hamburger"></i>
+            <div>
+                <div class="stat-icon">
+                    <i class="fas fa-hamburger"></i>
+                </div>
+                <div class="stat-label">Total Menu</div>
+                <div class="stat-value">{{ $totalMenu }}</div>
             </div>
-            <div class="stat-label">Total Menu</div>
-            <div class="stat-value">{{ $totalMenu }}</div>
+            <div class="stat-change">
+                <i class="fas fa-utensils"></i> Item Aktif
+            </div>
         </div>
     </div>
 </div>

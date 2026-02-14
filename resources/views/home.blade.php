@@ -1069,7 +1069,262 @@
         });
     </script>
 
+    <script>
+        /* ===============================
+   🆕 PAYMENT AUTO-DETECTION SCRIPT
+   Untuk handle Deeplink Payment (Gopay, ShopeePay, dll)
+================================ */
 
+        let paymentPollingInterval = null;
+
+        /**
+         * START AUTO POLLING
+         * Cek status payment setiap 3 detik secara otomatis
+         */
+        function startPaymentPolling(orderId) {
+            console.log('🔄 Starting payment polling for order:', orderId);
+            stopPaymentPolling();
+
+            let pollCount = 0;
+            const maxPolls = 60; // Max 3 menit (60 x 3 detik)
+
+            paymentPollingInterval = setInterval(async () => {
+                pollCount++;
+
+                try {
+                    const response = await fetch(`/api/orders/${orderId}/status`);
+                    const result = await response.json();
+
+                    if (result.success) {
+                        console.log('📊 Order status:', result.data.order_status);
+
+                        if (result.data.order_status === 'paid') {
+                            console.log('✅ Payment detected as PAID!');
+                            stopPaymentPolling();
+                            currentOrderId = null;
+
+                            // ✅ AUTO CLOSE MIDTRANS POPUP
+                            try {
+                                if (window.snap && window.snap.hide) {
+                                    window.snap.hide();
+                                }
+                            } catch (e) {
+                                console.log('Could not close snap popup:', e);
+                            }
+
+                            // Tampilkan success modal
+                            showSuccessMessage(
+                                'ORD-' + String(orderId).padStart(5, '0'),
+                                'Pembayaran berhasil! Pesanan Anda sedang diproses.'
+                            );
+                        }
+
+                        // Stop polling after max attempts
+                        if (pollCount >= maxPolls) {
+                            console.log('⏱️ Polling timeout');
+                            stopPaymentPolling();
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Polling error:', error);
+                }
+                setInterval(() => {
+                    fetch(`/api/orders/${orderId}/status`)
+                        .then(r => r.json())
+                        .then(r => {
+                            if (r.data.order_status === 'paid') {
+                                window.location.href = '/';
+                            }
+                        });
+                }, 3000);
+            }, 3000); // setiap 3 detik
+        }
+
+        /**
+         * STOP POLLING
+         */
+        function stopPaymentPolling() {
+            if (paymentPollingInterval) {
+                console.log('⏹️ Stopping payment polling');
+                clearInterval(paymentPollingInterval);
+                paymentPollingInterval = null;
+            }
+        }
+
+        /**
+         * CEK ORDER SEBELUM CANCEL
+         * Dipanggil saat user tutup payment popup
+         */
+        async function checkOrderBeforeCancel() {
+            if (!currentOrderId) {
+                console.log('No current order to check');
+                return;
+            }
+
+            console.log('🔍 Checking order status before cancel:', currentOrderId);
+
+            try {
+                const response = await fetch(`/api/orders/${currentOrderId}/status`);
+                const result = await response.json();
+
+                if (result.success && result.data.order_status === 'paid') {
+                    // ✅ Payment sudah sukses, JANGAN cancel
+                    console.log('✅ Payment already successful, not cancelling');
+                    stopPaymentPolling();
+                    currentOrderId = null;
+
+                    showSuccessMessage(
+                        'ORD-' + String(result.data.order_id).padStart(5, '0'),
+                        'Pembayaran berhasil! Pesanan Anda sedang diproses.'
+                    );
+
+                } else if (result.data.order_status === 'pending') {
+                    // ⏳ Masih pending, polling tetap jalan
+                    console.log('⏳ Payment still pending, keep polling');
+                    showToast('⏳ Pembayaran masih diproses. Kami akan mengupdate statusnya.');
+
+                } else {
+                    // ❌ Status lain (cancelled/error), stop polling dan cancel
+                    console.log('❌ Payment failed/cancelled:', result.data.order_status);
+                    stopPaymentPolling();
+
+                    if (!isCancelling) {
+                        const tempOrderId = currentOrderId;
+                        currentOrderId = null;
+                        cancelOrder(tempOrderId);
+                    }
+
+                    showToast('⚠ Pembayaran dibatalkan');
+                    document.getElementById('checkout-modal').classList.add('active');
+                }
+            } catch (error) {
+                console.error('❌ Check order error:', error);
+            }
+        }
+
+        /**
+         * UPDATE submitOrder() FUNCTION
+         * Tambahkan polling ke existing submitOrder function
+         */
+        async function submitOrderWithPolling() {
+            const name = document.getElementById('customer-name').value;
+            const table = document.getElementById('table-number').value;
+            const notes = document.getElementById('order-notes').value;
+
+            if (!name) {
+                showToast('⚠ Harap isi nama');
+                return;
+            }
+
+            if (selectedOrderType === 'dine_in' && !table) {
+                showToast('⚠ Harap pilih meja untuk Makan di Sini');
+                return;
+            }
+
+            const subtotal = cart.reduce((sum, item) => sum + item.menu_price * item.qty, 0);
+            const tax = Math.round(subtotal * 0.1);
+            const total = subtotal + tax;
+
+            const orderData = {
+                customer_name: name,
+                table_number: selectedOrderType === 'dine_in' ? parseInt(table) : null,
+                order_type: selectedOrderType,
+                notes: notes || '',
+                items: cart.map(item => ({
+                    menu_id: item.menu_id,
+                    menu_name: item.menu_name,
+                    menu_price: parseFloat(item.menu_price),
+                    qty: parseInt(item.qty)
+                })),
+                subtotal: parseFloat(subtotal),
+                tax: parseFloat(tax),
+                total: parseFloat(total)
+            };
+
+            try {
+                document.getElementById('checkout-modal').classList.remove('active');
+                showToast('⏳ Memproses pesanan...');
+
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    showToast('❌ Server error - Invalid response format');
+                    document.getElementById('checkout-modal').classList.add('active');
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    showToast('❌ ' + (result.message || 'Terjadi kesalahan'));
+                    document.getElementById('checkout-modal').classList.add('active');
+                    return;
+                }
+
+                currentOrderId = result.order_id;
+                console.log('✅ Order created:', currentOrderId);
+
+                // 🆕 START AUTO POLLING
+                startPaymentPolling(currentOrderId);
+
+                // BUKA SNAP PAYMENT
+                if (result.snap_token) {
+                    window.snap.pay(result.snap_token, {
+                        onSuccess: function(snapResult) {
+                            console.log('✅ Payment success (callback):', snapResult);
+                            stopPaymentPolling();
+                            const tempOrderId = currentOrderId;
+                            currentOrderId = null;
+                            showSuccessMessage(
+                                'ORD-' + String(tempOrderId).padStart(5, '0'),
+                                'Pembayaran berhasil! Pesanan Anda sedang diproses.'
+                            );
+                        },
+                        onPending: function(snapResult) {
+                            console.log('⏳ Payment pending (callback):', snapResult);
+                            // JANGAN stop polling, biarkan polling detect payment
+                            showToast('⏳ Menunggu pembayaran...');
+                        },
+                        onError: function(snapResult) {
+                            console.log('❌ Payment error (callback):', snapResult);
+                            stopPaymentPolling();
+                            if (currentOrderId && !isCancelling) {
+                                const tempOrderId = currentOrderId;
+                                currentOrderId = null;
+                                cancelOrder(tempOrderId);
+                            }
+                            showToast('❌ Pembayaran gagal. Silakan coba lagi.');
+                            document.getElementById('checkout-modal').classList.add('active');
+                        },
+                        onClose: function() {
+                            console.log('🚪 Payment popup closed');
+                            // CEK STATUS DULU sebelum cancel
+                            checkOrderBeforeCancel();
+                        }
+                    });
+                } else {
+                    showToast('❌ Gagal mendapatkan payment token');
+                    document.getElementById('checkout-modal').classList.add('active');
+                }
+
+            } catch (error) {
+                console.error('❌ Submit order error:', error);
+                showToast('❌ Terjadi kesalahan server: ' + error.message);
+                document.getElementById('checkout-modal').classList.add('active');
+            }
+        }
+    </script>
     <script>
         /* ===============================
    STATE
@@ -1353,35 +1608,32 @@
                     return;
                 }
 
-                // Simpan order ID untuk cancel jika diperlukan
                 currentOrderId = result.order_id;
-                console.log('Order created:', currentOrderId);
+                console.log('✅ Order created:', currentOrderId);
+
+                // 🆕 START AUTO POLLING
+                startPaymentPolling(currentOrderId);
 
                 // BUKA SNAP PAYMENT
                 if (result.snap_token) {
                     window.snap.pay(result.snap_token, {
                         onSuccess: function(snapResult) {
-                            console.log('Payment success:', snapResult);
+                            console.log('✅ Payment success (callback):', snapResult);
+                            stopPaymentPolling();
                             const tempOrderId = currentOrderId;
                             currentOrderId = null;
-                            isCancelling = false;
                             showSuccessMessage(
                                 'ORD-' + String(tempOrderId).padStart(5, '0'),
                                 'Pembayaran berhasil! Pesanan Anda sedang diproses.'
                             );
                         },
                         onPending: function(snapResult) {
-                            console.log('Payment pending:', snapResult);
-                            const tempOrderId = currentOrderId;
-                            currentOrderId = null;
-                            isCancelling = false;
-                            showSuccessMessage(
-                                'ORD-' + String(tempOrderId).padStart(5, '0'),
-                                'Menunggu pembayaran. Silakan selesaikan pembayaran Anda.'
-                            );
+                            console.log('⏳ Payment pending (callback):', snapResult);
+                            showToast('⏳ Menunggu pembayaran...');
                         },
                         onError: function(snapResult) {
-                            console.log('Payment error:', snapResult);
+                            console.log('❌ Payment error (callback):', snapResult);
+                            stopPaymentPolling();
                             if (currentOrderId && !isCancelling) {
                                 const tempOrderId = currentOrderId;
                                 currentOrderId = null;
@@ -1389,28 +1641,10 @@
                             }
                             showToast('❌ Pembayaran gagal. Silakan coba lagi.');
                             document.getElementById('checkout-modal').classList.add('active');
-                            const interval = setInterval(() => {
-                                if (!currentOrderId) return;
-
-                                fetch(`/api/orders/${currentOrderId}/status`)
-                                    .then(res => res.json())
-                                    .then(res => {
-                                        if (res.success && res.data.order_status === 'paid') {
-                                            clearInterval(interval);
-                                            window.location.href = '/';
-                                        }
-                                    });
-                            }, 3000);
                         },
                         onClose: function() {
-                            console.log('Payment popup closed');
-                            if (currentOrderId && !isCancelling) {
-                                const tempOrderId = currentOrderId;
-                                currentOrderId = null;
-                                cancelOrder(tempOrderId);
-                            }
-                            showToast('⚠ Pembayaran dibatalkan');
-                            document.getElementById('checkout-modal').classList.add('active');
+                            console.log('🚪 Payment popup closed');
+                            checkOrderBeforeCancel();
                         }
                     });
                 } else {
@@ -1419,7 +1653,7 @@
                 }
 
             } catch (error) {
-                console.error('Submit order error:', error);
+                console.error('❌ Submit order error:', error);
                 showToast('❌ Terjadi kesalahan server: ' + error.message);
                 document.getElementById('checkout-modal').classList.add('active');
             }

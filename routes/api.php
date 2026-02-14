@@ -42,4 +42,3 @@ Route::prefix('orders')->group(function () {
 Route::post('/payment/callback', [OrderCustomerController::class, 'paymentCallback']);
 
 // Payment Finish (redirect setelah payment - bisa GET)
-Route::get('/payment/finish', [OrderCustomerController::class, 'paymentFinish']);

@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\MejaController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\API\OrderCustomerController;
 use App\Http\Controllers\Admin\StaffKasirController;
 use App\Http\Controllers\Admin\StaffWaiterController;
 
@@ -23,25 +24,28 @@ Route::get('/', [CustomerController::class, 'index']);
 Route::post('/add-cart', [CustomerController::class, 'addCart']);
 Route::get('/pesanan', [CustomerController::class, 'cart']);
 Route::post('/checkout', [CustomerController::class, 'checkout']);
+Route::get('/payment/finish', [OrderCustomerController::class, 'paymentFinish'])->name('payment.finish');
 
 /*
 |--------------------------------------------------------------------------
 | AUTH
 |--------------------------------------------------------------------------
 */
-Route::get('/login', [AuthController::class, 'index'])->name('auth.login');
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+// Login dengan prevent.back
+Route::middleware(['prevent.back'])->group(function () {
+    Route::get('/login', [AuthController::class, 'index'])->name('auth.login');
+    Route::post('/login', [AuthController::class, 'login']);
+});
 
-/*
-|--------------------------------------------------------------------------
-| DASHBOARD (AUTH)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth'])->group(function () {
+// Logout
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->middleware(['auth', 'prevent.back'])
+    ->name('logout');
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])
-        ->name('dashboard');
+// Dashboard dengan prevent.back
+Route::middleware(['auth', 'prevent.back'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // ... route lainnya
 
     // PENGATURAN
     Route::get('/dashboard/pengaturan', [App\Http\Controllers\PengaturanController::class, 'index'])
@@ -54,12 +58,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('pengaturan.update.notifications');
     Route::put('/dashboard/pengaturan/preferences', [App\Http\Controllers\PengaturanController::class, 'updatePreferences'])
         ->name('pengaturan.update.preferences');
-    Route::get('/dashboard/laporan', [LaporanController::class, 'index'])
-        ->name('dashboard.laporan');
-    Route::get(
-        '/dashboard/laporan/export-excel',
-        [LaporanController::class, 'exportExcel']
-    )->name('laporan.export.excel');
+
 
 
 
@@ -70,15 +69,7 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::middleware('level:1')->group(function () {
 
-        // MENU
-        Route::get('/dashboard/menu', [MenuController::class, 'index'])
-            ->name('dashboard.menu');
-        Route::post('/dashboard/menu', [MenuController::class, 'store'])
-            ->name('dashboard.store.menu');
-        Route::put('/dashboard/menu/{id}', [MenuController::class, 'update'])
-            ->name('dashboard.update.menu');
-        Route::delete('/dashboard/menu/{id}', [MenuController::class, 'destroy'])
-            ->name('dashboard.menu.destroy');
+
 
         // KATEGORI
         Route::resource('/dashboard/kategori', KategoriController::class)
@@ -108,11 +99,24 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::middleware('level:1,2')->group(function () {
 
-        Route::get('/dashboard/meja', [MejaController::class, 'index']);
-        Route::post('/dashboard/meja', [MejaController::class, 'store']);
-        Route::put('/dashboard/meja/{id}', [MejaController::class, 'update']);
-        Route::delete('/dashboard/meja/{id}', [MejaController::class, 'destroy']);
-        Route::patch('/dashboard/meja/{id}/toggle', [MejaController::class, 'toggle']);
+        Route::get('/dashboard/meja', [MejaController::class, 'index'])
+            ->name('dashboard.meja.index');
+
+        Route::post('/dashboard/meja', [MejaController::class, 'store'])
+            ->name('dashboard.meja.store');
+
+        Route::put('/dashboard/meja/{id}', [MejaController::class, 'update'])
+            ->name('dashboard.meja.update');
+
+        Route::delete('/dashboard/meja/{id}', [MejaController::class, 'destroy'])
+            ->name('dashboard.meja.destroy');
+
+        Route::patch('/dashboard/meja/{id}/toggle', [MejaController::class, 'toggle'])
+            ->name('dashboard.meja.toggle');
+
+        Route::post('/dashboard/meja/reset-all', [MejaController::class, 'resetAll'])
+            ->name('dashboard.meja.resetAll');
+
 
 
         // Route untuk halaman pesanan
@@ -132,7 +136,6 @@ Route::middleware(['auth'])->group(function () {
 
 
         // ✨ ROUTE BARU: Reset semua meja
-        Route::post('/dashboard/meja/reset-all', [MejaController::class, 'resetAll']);
     });
 
     /*
@@ -169,5 +172,24 @@ Route::middleware(['auth'])->group(function () {
             ->name('dashboard.transaksi.destroy');
         Route::patch('/dashboard/transaksi/{id}/status', [TransaksiController::class, 'updateStatus'])
             ->name('dashboard.transaksi.update.status');
+    });
+
+    Route::middleware('level:1,4')->group(function () {
+        // MENU
+        Route::get('/dashboard/menu', [MenuController::class, 'index'])
+            ->name('dashboard.menu');
+        Route::post('/dashboard/menu', [MenuController::class, 'store'])
+            ->name('dashboard.store.menu');
+        Route::put('/dashboard/menu/{id}', [MenuController::class, 'update'])
+            ->name('dashboard.update.menu');
+        Route::delete('/dashboard/menu/{id}', [MenuController::class, 'destroy'])
+            ->name('dashboard.menu.destroy');
+
+        Route::get('/dashboard/laporan', [LaporanController::class, 'index'])
+            ->name('dashboard.laporan');
+        Route::get(
+            '/dashboard/laporan/export-excel',
+            [LaporanController::class, 'exportExcel']
+        )->name('laporan.export.excel');
     });
 });

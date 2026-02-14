@@ -570,8 +570,8 @@
                     <i class="fas fa-utensils"></i>
                 </div>
                 <div class="brand-text">
-                    <h5>Restaurant POS</h5>
-                    <small>Point of Sale</small>
+                    <h5>Restaurant HQ</h5>
+                    <small></small>
                 </div>
             </a>
             <button class="btn-close-sidebar" id="closeSidebar">
@@ -675,11 +675,6 @@
                 <span>Pesanan</span>
             </a>
 
-            <div class="sidebar-section-header">Laporan</div>
-            <a href="/dashboard/laporan" class="nav-link {{ request()->is('dashboard/laporan*') ? 'active' : '' }}">
-                <i class="fas fa-chart-pie"></i>
-                <span>Laporan Keuangan</span>
-            </a>
             <div class="sidebar-section-header">Setting</div>
             <a href="/dashboard/pengaturan" class="nav-link {{ request()->is('dashboard/pengaturan*') ? 'active' : '' }}">
                 <i class="fas fa-cog"></i>
@@ -697,6 +692,19 @@
             <a href="/dashboard/transaksi" class="nav-link {{ request()->is('dashboard/transaksi*') ? 'active' : '' }}">
                 <i class="fas fa-receipt"></i>
                 <span>Transaksi</span>
+            </a>
+
+            <div class="sidebar-section-header">Setting</div>
+            <a href="/dashboard/pengaturan" class="nav-link {{ request()->is('dashboard/pengaturan*') ? 'active' : '' }}">
+                <i class="fas fa-cog"></i>
+                <span>Pengaturan</span>
+            </a>
+            @endif
+            @if ($level == 4)
+            <div class="sidebar-section-header">Menu Utama</div>
+            <a href="/dashboard/menu" class="nav-link {{ request()->is('dashboard/menu*') ? 'active' : '' }}">
+                <i class="fas fa-hamburger"></i>
+                <span>Menu</span>
             </a>
             <div class="sidebar-section-header">Laporan</div>
             <a href="/dashboard/laporan" class="nav-link {{ request()->is('dashboard/laporan*') ? 'active' : '' }}">
@@ -739,6 +747,28 @@
         <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
             @csrf
         </form>
+        <script>
+            // Prevent back to login
+            (function() {
+                if (typeof window.history.pushState === 'function') {
+                    window.history.pushState(null, null, window.location.href);
+                    window.onpopstate = function() {
+                        window.history.pushState(null, null, window.location.href);
+                    };
+                }
+
+                window.addEventListener('pageshow', function(event) {
+                    if (event.persisted) {
+                        window.location.reload(true);
+                    }
+                });
+            })();
+
+            // Clear cache on logout
+            document.getElementById('btnLogout')?.addEventListener('click', function(e) {
+                sessionStorage.clear();
+            });
+        </script>
 
     </div>
 
@@ -760,10 +790,10 @@
                 <div class="date-time-clock" id="clock"></div>
             </div>
 
-            <button class="btn-notification" title="Notifikasi">
+            <!-- <button class="btn-notification" title="Notifikasi">
                 <i class="fas fa-bell"></i>
                 <span class="notification-badge"></span>
-            </button>
+            </button> -->
         </div>
     </div>
 

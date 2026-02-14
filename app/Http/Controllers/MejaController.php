@@ -7,11 +7,107 @@ use Illuminate\Http\Request;
 
 class MejaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $mejas = Meja::orderBy('meja_nama')->get();
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', 10);
+
+        $mejas = Meja::query()
+            ->when($search, function ($query, $search) {
+                return $query->where('meja_nama', 'like', "%{$search}%");
+                // ->orWhere('meja_kapasitas', 'like', "%{$search}%")
+                // ->orWhere('meja_status', 'like', "%{$search}%");
+            })
+            ->orderBy('meja_nama')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        // Jika request AJAX, return HTML table saja
+        if ($request->ajax()) {
+            $html = '';
+
+            if ($mejas->count() > 0) {
+                $html .= '<table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nama Meja</th>
+                            <th>Status</th>
+                            <th>Kapasitas</th>
+                            <th>Toggle Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mejaTableBody">';
+
+                foreach ($mejas as $index => $meja) {
+                    $no = ($mejas->currentPage() - 1) * $mejas->perPage() + $index + 1;
+                    $statusBadge = $meja->meja_status == 'terisi' ? 'bg-danger' : 'bg-success';
+                    $checked = $meja->meja_status == 'terisi' ? 'checked' : '';
+
+                    $html .= '<tr class="meja-row">
+                        <td>' . $no . '</td>
+                        <td><strong>' . e($meja->meja_nama) . '</strong></td>
+                        <td>
+                            <span class="status-badge ' . $statusBadge . '">
+                                ' . strtoupper($meja->meja_status) . '
+                            </span>
+                        </td>
+                        <td>
+                            <span class="capacity-badge">
+                                ' . $meja->meja_kapasitas . ' Orang
+                            </span>
+                        </td>
+                        <td>
+                            <label class="toggle-switch">
+                                <input type="checkbox"
+                                    class="toggle-meja"
+                                    data-id="' . $meja->meja_id . '"
+                                    ' . $checked . '>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </td>
+                        <td>
+                            <button class="btn-action btn-delete"
+                                data-id="' . $meja->meja_id . '"
+                                data-nama="' . e($meja->meja_nama) . '">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>';
+                }
+
+                $html .= '</tbody></table>';
+
+                // Pagination
+                $html .= '<div class="pagination-wrapper">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3">
+                        <div class="text-muted">
+                            Menampilkan ' . $mejas->count() . ' dari ' . $mejas->total() . ' meja
+                        </div>
+                        <div>
+                            ' . $mejas->links('pagination::bootstrap-5')->toHtml() . '
+                        </div>
+                    </div>
+                </div>';
+            } else {
+                // Empty state
+                $searchText = $search ? 'Tidak ada meja yang sesuai dengan pencarian "<strong>' . e($search) . '</strong>"' : 'Belum ada meja yang terdaftar';
+
+                $html .= '<div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <h5 class="mt-3 mb-2">Tidak Ada Data</h5>
+                    <p class="text-muted mb-0">' . $searchText . '</p>
+                </div>';
+            }
+
+            return response($html);
+        }
+
+        // Jika request normal, return full page
         return view('dashboard.meja.index', compact('mejas'));
     }
+
 
     public function store(Request $request)
     {

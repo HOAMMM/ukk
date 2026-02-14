@@ -157,7 +157,7 @@
                         <tr>
                             <th>Tanggal</th>
                             <th>Kode</th>
-                            <th>Kasir</th>
+                            <th>Pelanggan</th>
                             <th>Status</th>
                             <th class="text-end">Total</th>
                             <th class="text-end">Bayar</th>
@@ -178,7 +178,7 @@
                                 {{ $item->transaksi_code }}
                             </td>
 
-                            <td>{{ $item->transaksi_cname ?? '-' }}</td>
+                            <td>{{ $item->transaksi_csname ?? '-' }}</td>
 
                             <td>
                                 @if($item->transaksi_status == 'success')

@@ -25,11 +25,11 @@
     }
 
     .summary-card.revenue {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #eb6410 0%, #c5655f 100%);
     }
 
     .summary-card.transaction {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, #c7403b 0%, #f5576c 100%);
     }
 
     .summary-card.average {
@@ -197,9 +197,9 @@
             <h1 class="page-title">
                 <i class="fas fa-chart-line me-2 text-primary"></i>
                 Laporan Keuangan
-                <span class="filter-badge">
+                <!-- <span class="filter-badge">
                     <i class="fas fa-check-circle me-1"></i> Status: PAID Only
-                </span>
+                </span> -->
             </h1>
             <p class="text-muted mb-0">
                 Rekap pendapatan & transaksi berdasarkan periode (hanya transaksi yang sudah dibayar)

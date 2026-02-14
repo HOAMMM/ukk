@@ -168,6 +168,9 @@ class OrderCustomerController extends Controller
             throw new \Exception('Gross amount tidak valid');
         }
 
+        // ✅ Dapatkan base URL dari config atau request
+        $finishUrl = 'https://phuong-elytrous-malignantly.ngrok-free.dev/payment/finish?order_id=' . $order->order_id;
+
         $params = [
             'transaction_details' => [
                 'order_id'     => $transaksi->transaksi_code,
@@ -178,12 +181,18 @@ class OrderCustomerController extends Controller
             ],
             'item_details' => $item_details,
             'callbacks' => [
-                'finish' => url('/'),
+                'finish' => $finishUrl,
             ],
         ];
 
         try {
             $snapToken = Snap::getSnapToken($params);
+
+            Log::info('Snap token generated', [
+                'order_id' => $order->order_id,
+                'finish_url' => $finishUrl
+            ]);
+
             return $snapToken;
         } catch (\Exception $e) {
             Log::error('MIDTRANS SNAP ERROR', [
@@ -298,7 +307,41 @@ class OrderCustomerController extends Controller
      */
     public function paymentFinish(Request $request)
     {
-        return redirect('/')->with('payment_status', 'completed');
+        try {
+            Log::info('Payment Finish Request', [
+                'all_params' => $request->all(),
+                'query_params' => $request->query()
+            ]);
+
+            $orderId = $request->query('order_id');
+
+            if (!$orderId) {
+                $orderId = $request->input('order_id');
+            }
+
+            if ($orderId) {
+                $order = Order::find($orderId);
+
+                if ($order) {
+                    Log::info('Order found', [
+                        'order_id' => $orderId,
+                        'status' => $order->order_status
+                    ]);
+
+                    // Redirect ke homepage dengan info order
+                    return redirect('/?order_id=' . $orderId);
+                }
+            }
+
+            return redirect('/');
+        } catch (\Exception $e) {
+            Log::error('Payment Finish Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return redirect('/');
+        }
     }
 
     /**
@@ -423,18 +466,15 @@ class OrderCustomerController extends Controller
 
     /**
      * CANCEL ORDER (Customer - dipanggil saat user close snap popup)
-     * FIXED: Tambah try-catch dan logging yang lebih detail
      */
     public function cancel($orderId)
     {
         try {
-            // Log incoming request
             Log::info('Cancel order request received', [
                 'order_id' => $orderId,
                 'timestamp' => now()
             ]);
 
-            // Validasi order_id
             if (!is_numeric($orderId)) {
                 Log::warning('Invalid order_id format', ['order_id' => $orderId]);
                 return response()->json([
@@ -445,7 +485,6 @@ class OrderCustomerController extends Controller
 
             DB::beginTransaction();
 
-            // Cek apakah order ada
             $order = Order::find($orderId);
 
             if (!$order) {
@@ -457,7 +496,6 @@ class OrderCustomerController extends Controller
                 ], 404);
             }
 
-            // Cek status order - hanya cancel jika pending
             if ($order->order_status !== 'pending') {
                 Log::info('Order already processed', [
                     'order_id' => $orderId,
@@ -471,10 +509,8 @@ class OrderCustomerController extends Controller
                 ], 422);
             }
 
-            // Update order status
             $order->update(['order_status' => 'cancelled']);
 
-            // Update transaksi jika ada
             $transaksi = Transaksi::where('transaksi_orderid', $orderId)->first();
             if ($transaksi) {
                 $transaksi->update(['transaksi_status' => 'cancelled']);
